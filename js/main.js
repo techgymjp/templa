@@ -829,9 +829,13 @@ function updateFrying(dt, time) {
 
 // 油温は店が一定に保つ。入れすぎると一時的に下がる（表示はしない）
 function updateTemperature(dt, items) {
+  // 目標の油温：水分の多い具材がたくさんあるほど下がり、5個目・6個目（入れすぎ）で大きく下がる
+  let load = 0;
+  for (const it of items) load += it.moisture * it.radius * 3;
+  load += Math.max(0, items.length - 4) * 9;
+  const target = OIL_SET - load;
   let T = state.temp;
-  T += (OIL_SET - T) / 14 * dt;
-  for (const it of items) T -= 1.0 * it.moisture * it.radius * dt;
+  T += (target - T) / 4 * dt;
   const d = Math.min(state.pendingDrop, dt * 6);
   state.pendingDrop -= d; T -= d;
   state.temp = T;
@@ -1064,7 +1068,8 @@ function endGame() {
   state.running = false;
   const st = state.stats;
   const avg = st.fried ? Math.round(st.qualSum / st.fried) : 0;
-  const ranks = [[0, '見習い'], [700, '駆け出し'], [1500, '一人前'], [2500, '板前'], [3500, '名人'], [4600, '天ぷらの神']];
+  // 自動プレイでの検証にもとづく基準（名人の腕前で約2400点。天ぷらの神は職人モード×1.3が必要）
+  const ranks = [[0, '見習い'], [500, '駆け出し'], [1000, '一人前'], [1500, '板前'], [2000, '名人'], [2700, '天ぷらの神']];
   let rank = ranks[0][1];
   for (const [s, r] of ranks) if (state.score >= s) rank = r;
   $('rank').textContent = rank;
@@ -1148,6 +1153,38 @@ function adaptQuality(rawDt) {
     if (perfLevel === 2) { renderer.setPixelRatio(1); resize(); bloom.enabled = false; }
   }
 }
+// ゲームの1コマ分の処理。state.sim のときは見た目だけの処理（泡・湯気・油面・ラベルなど）を省く
+function simStep(dt) {
+  time += dt;
+  for (let i = tweens.length - 1; i >= 0; i--) {
+    const t = tweens[i];
+    t.t += dt;
+    const k = Math.min(1, t.t / t.dur);
+    t.fn(k);
+    if (k >= 1) { tweens.splice(i, 1); t.done && t.done(); }
+  }
+  const items = updateFrying(dt, time);
+  updateTemperature(dt, items);
+  if (!state.sim) updateTenkasu(dt, state.temp, time);
+  if (!state.sim) updateBubbles(dt);
+  if (!state.sim) updateSteam(dt);
+  updateDrips(dt);
+  if (!state.sim) updateOil(time);
+  if (!state.sim) updateHashi(dt);
+  if (state.mode === 'demo') demoTick(dt);
+  else if (state.running) {
+    updateCustomers(dt);
+    updateRack(dt);
+    if (state.mode === 'shift') {
+      state.time -= dt;
+      if (state.time <= 0) endGame();
+    }
+  }
+  if (state.mode === 'demo') updateRack(dt);
+  if (!state.sim) updateLabels();
+  if (!state.sim) updateHUD();
+}
+
 function frame() {
   requestAnimationFrame(frame);
   const rawDt = clock.getDelta();
@@ -1156,36 +1193,7 @@ function frame() {
   controls.update();
   followZoom();
   stMat.uniforms.pscale.value = renderer.domElement.height * 0.5;
-  if (!state.paused) {
-    time += dt;
-    for (let i = tweens.length - 1; i >= 0; i--) {
-      const t = tweens[i];
-      t.t += dt;
-      const k = Math.min(1, t.t / t.dur);
-      t.fn(k);
-      if (k >= 1) { tweens.splice(i, 1); t.done && t.done(); }
-    }
-    const items = updateFrying(dt, time);
-    updateTemperature(dt, items);
-    updateTenkasu(dt, state.temp, time);
-    updateBubbles(dt);
-    updateSteam(dt);
-    updateDrips(dt);
-    updateOil(time);
-    updateHashi(dt);
-    if (state.mode === 'demo') demoTick(dt);
-    else if (state.running) {
-      updateCustomers(dt);
-      updateRack(dt);
-      if (state.mode === 'shift') {
-        state.time -= dt;
-        if (state.time <= 0) endGame();
-      }
-    }
-    if (state.mode === 'demo') updateRack(dt);
-    updateLabels();
-    updateHUD();
-  }
+  if (!state.paused && !state.sim) simStep(dt);
   finish.uniforms.uTime.value = time;
   // スマホなどでは後処理を通さず直接描画して軽くする
   if (LOW) renderer.render(scene, camera); else composer.render();
@@ -1195,4 +1203,4 @@ $('loading').classList.add('hidden');
 frame();
 
 // デバッグ用
-window.__tempura = { setView, audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
+window.__tempura = { simStep, INGREDIENTS, setView, audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };

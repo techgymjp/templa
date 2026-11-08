@@ -36,12 +36,12 @@ export function brownRate(def, T) { return T < 110 ? 0 : Math.pow(2, (T - 175) /
 // ---------------------------------------------------------------
 // 評価
 // ---------------------------------------------------------------
-const gauss = (b) => Math.exp(-Math.pow((b - 1.0) / 0.32, 2));
+const gauss = (b) => Math.exp(-Math.pow((b - 1.0) / 0.4, 2));
 export function evaluate(item) {
   const { cook: c, brownA: a, brownB: bb, grease: g } = item;
   const b = (a + bb) / 2, uneven = Math.abs(a - bb);
   const colorS = Math.sqrt(gauss(a) * gauss(bb));
-  const cookS = c >= 1 ? 1 : Math.pow(Math.max(0, (c - 0.6) / 0.4), 2);
+  const cookS = c >= 0.95 ? 1 : Math.pow(Math.max(0, (c - 0.55) / 0.4), 2);
   const overS = c > 1.6 ? Math.max(0.5, 1 - (c - 1.6) * 0.8) : 1;
   const crispS = 1 - 0.65 * Math.min(1, g);
   const score = Math.round(100 * Math.pow(colorS, 0.8) * cookS * overS * crispS);
