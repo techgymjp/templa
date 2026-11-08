@@ -28,7 +28,7 @@ export class FryAudio {
   constructor() {
     this.ctx = null; this.bgmOn = true; this.bgmTimer = null;
     this.prepared = false; this.preparing = null;
-    this.crackles = []; this.piano = new Map(); this.active = { fx: 0, bgm: 0, splash: 0 };
+    this.crackles = []; this.piano = new Map(); this.active = { fx: 0, bgm: 0, splash: 0, paper: 0 };
   }
 
   // ユーザー操作（タップ）の中で呼ぶ
@@ -103,6 +103,23 @@ export class FryAudio {
         s.connect(f).connect(g).connect(oc.destination);
         s.start(0, 0.3, 1.5);
       }).then(b => { this.splashBuf = b; }));
+      // 天紙に置いた「カサッ」：紙のこすれ（細かい粒の高い音）＋軽く置く「トッ」
+      jobs.push(() => render(0.3, (oc) => {
+        const s = oc.createBufferSource(); s.buffer = this.noise;
+        const f = oc.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 4200; f.Q.value = 0.9;
+        const g = oc.createGain();
+        // 紙がこすれる細かいざらつき
+        g.gain.setValueAtTime(0.0001, 0);
+        let t = 0;
+        while (t < 0.16) { g.gain.setValueAtTime(0.15 + Math.random() * 0.55 * (1 - t / 0.16), t); t += 0.006 + Math.random() * 0.01; }
+        g.gain.exponentialRampToValueAtTime(0.0001, 0.22);
+        s.connect(f).connect(g).connect(oc.destination);
+        s.start(0, 0.7, 0.3);
+        const o = oc.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(190, 0); o.frequency.exponentialRampToValueAtTime(90, 0.06);
+        const og = oc.createGain(); og.gain.setValueAtTime(0.5, 0); og.gain.exponentialRampToValueAtTime(0.0001, 0.07);
+        o.connect(og).connect(oc.destination); o.start(0); o.stop(0.08);
+      }).then(b => { this.paperBuf = b; }));
       // ピアノの各音（曲で使う音だけ）
       const names = [...new Set(BARS.flat())];
       for (const n of names) {
@@ -179,6 +196,11 @@ export class FryAudio {
   // 具材を入れた「ジュワッ」
   splash(power = 1) {
     if (this.prepared) this.play(this.splashBuf, Math.min(1, power), 0, this.master, 8, 'splash');
+  }
+
+  // 揚げた天ぷらを天紙に置いた音
+  paper() {
+    if (this.prepared) this.play(this.paperBuf, 0.7, 0, this.master, 6, 'paper');
   }
 
   // ちょっとした効果音（まれにしか鳴らない）

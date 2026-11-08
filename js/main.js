@@ -281,7 +281,7 @@ function updateTenkasu(dt, T, time) {
 // ---------------------------------------------------------------
 // 湯気
 // ---------------------------------------------------------------
-const ST_N = 400;
+const ST_N = 700;
 const stGeo = new THREE.BufferGeometry();
 stGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(ST_N * 3), 3));
 stGeo.setAttribute('size', new THREE.BufferAttribute(new Float32Array(ST_N), 1));
@@ -299,9 +299,10 @@ steamPts.frustumCulled = false;
 steamPts.renderOrder = 8;
 scene.add(steamPts);
 const steam = [];
-function spawnSteam(x, y, z) {
+function spawnSteam(x, y, z, k = 1) {
   if (steam.length >= ST_N) return;
-  steam.push({ x, y, z, vx: rand(-0.15, 0.15), vy: rand(0.6, 1.1), vz: rand(-0.15, 0.15), life: rand(1.4, 2.4), max: 2.4, size: rand(0.5, 0.9) });
+  // 奥（お客さん側）へ流れながら立ちのぼる：真上から見ても天ぷらの色を隠さない
+  steam.push({ x, y, z, vx: rand(-0.12, 0.12), vy: rand(0.55, 0.9), vz: rand(-0.45, -0.25), life: rand(2.2, 3.4), max: 3.4, size: rand(0.9, 1.5) * k });
 }
 function updateSteam(dt) {
   const pos = stGeo.attributes.position.array, size = stGeo.attributes.size.array, alpha = stGeo.attributes.alpha.array;
@@ -314,8 +315,9 @@ function updateSteam(dt) {
     steam[n++] = p;
     const k = p.life / p.max;
     pos[(n - 1) * 3] = p.x; pos[(n - 1) * 3 + 1] = p.y; pos[(n - 1) * 3 + 2] = p.z;
-    size[n - 1] = p.size * (1 + (1 - k) * 2.5);
-    alpha[n - 1] = 0.12 * Math.min(1, (1 - k) * 5) * k;
+    p.vx += Math.sin(p.y * 2 + i) * 0.002; // ゆらゆら
+    size[n - 1] = p.size * (1 + (1 - k) * 2.2);
+    alpha[n - 1] = 0.26 * Math.min(1, Math.max(0, (1 - k) * 2.5 - 0.15)) * Math.pow(k, 0.8);
   }
   steam.length = n;
   stGeo.setDrawRange(0, n);
@@ -388,6 +390,8 @@ function addIngredient(key) {
   state.busy = true;
   updateIngredientButtons();
   const it = new Tempura(key);
+  // その具材を初めて揚げるときだけ、揚げ加減ゲージを出す（職人モードとデモでは出さない）
+  it.tutorial = state.mode === 'shift' && !state.master && !tutorialSeen().includes(key);
   state.items.push(it);
   scene.add(it.group);
   const g = it.group;
@@ -435,6 +439,7 @@ function enterOil(it) {
   state.pendingDrop += 1.5 + it.radius * 2.5;
   audio.splash(1);
   splashAt(p, it.radius, 1);
+  for (let k = 0; k < 14; k++) spawnSteam(p.x + rand(-0.6, 0.6), 0.3, p.z + rand(-0.6, 0.6), 1.2);
   spawnTenkasu(p.x, p.z, Math.round(rand(6, 12)), it.radius * 1.1);
 }
 
@@ -463,6 +468,7 @@ function flipItem(it) {
     it.flipper.position.y = 0;
     it.flipped = !it.flipped;
     it.flipCount = (it.flipCount || 0) + 1;
+    if (it.flipCount === 1) it.flipA0 = it.flipped ? it.brownA : it.brownB;
     it.flipping = false;
     if (hashiFollow === it) { hashiFollow = null; hashiOpenTarget = 0.12; }
     splashAt(it.group.position, it.radius, 0.35);
@@ -489,6 +495,7 @@ function liftItem(it) {
   if (state.mode !== 'demo') audio.init();
   it.state = 'lifted';
   const ev = evaluate(it);
+  if (it.tutorial) markTutorialSeen(it.key);
   it.quality = ev.score;
   const slot = freeSlot();
   const dest = RACK_SLOTS[slot].clone();
@@ -502,6 +509,7 @@ function liftItem(it) {
   }, () => {
     if (hashiFollow === it) { hashiFollow = null; hashiOpenTarget = 0.12; hashiTarget.copy(HASHI_REST); }
     updateIngredientButtons();
+    audio.paper(); // 天紙に置いた「カサッ」
     const stain = new THREE.Mesh(new THREE.PlaneGeometry(it.radius * 2.4, it.radius * 2.4), world.stainMat.clone());
     stain.rotation.x = -Math.PI / 2;
     stain.position.set(dest.x, dest.y - 0.035, dest.z);
@@ -569,8 +577,10 @@ function newCustomer(seat) {
   return c;
 }
 
+// お客さんの待ち時間（秒）＝ base ＋ 揚げ時間 × per
+const PATIENCE = { base: 17, per: 1.5 }; // 自動プレイで検証した値（名人はほぼ取りこぼさず、初心者は平均1.5人帰らせる）
 function patienceFor(key) {
-  return 40 + INGREDIENTS[key].cookTime * 2.5;
+  return PATIENCE.base + INGREDIENTS[key].cookTime * PATIENCE.per;
 }
 
 function showOrder(seat) {
@@ -736,6 +746,7 @@ function updateRack(dt) {
     it.sheen = Math.max(0.15, 1 - rec.t * 0.35);
     it.updateLook();
     if (!rec.serving && rec.t < 1.5 && Math.random() < dt * 8) spawnDrip(it.group.position);
+    if (!state.sim && rec.t < 5 && Math.random() < dt * 6 * (1 - rec.t / 5)) spawnSteam(it.group.position.x + rand(-0.3, 0.3), it.group.position.y + 0.15, it.group.position.z + rand(-0.3, 0.3), 0.8);
     if (!rec.serving && rec.t > 45) {
       state.rack = state.rack.filter(r => r !== rec);
       tween(0.4, k => it.group.scale.setScalar(1 - k), () => discard(rec));
@@ -801,7 +812,9 @@ function updateFrying(dt, time) {
       const wx = p.x + lx * Math.cos(ry) + lz * Math.sin(ry), wz = p.z - lx * Math.sin(ry) + lz * Math.cos(ry);
       spawnBubble(wx, wz, rand(0.008, 0.022) + Math.random() * it.moisture * 0.04, rand(0.15, 0.45) + it.moisture * 0.35);
     }
-    if (Math.random() < dt * 10 * it.moisture * heat) spawnSteam(p.x + rand(-0.3, 0.3), 0.3, p.z + rand(-0.3, 0.3));
+    // 湯気：水分が多いほど多い（減ってきたら揚がってきた合図）
+    let sn = dt * 24 * it.moisture * heat * it.radius;
+    while (sn > 0) { if (sn < 1 && Math.random() > sn) break; sn--; spawnSteam(p.x + rand(-0.5, 0.5) * it.radius, 0.25, p.z + rand(-0.5, 0.5) * it.radius, 0.7 + it.moisture * 0.5); }
     level += it.moisture * heat * it.radius;
     dryness += (1 - it.moisture) * it.radius; wsum += it.radius;
 
@@ -866,11 +879,54 @@ function updateIngredientButtons() {
 }
 
 $('opt-bgm').checked = audio.bgmOn;
+$('btn-tutorial-reset').addEventListener('click', (e) => {
+  e.preventDefault();
+  store.set('tutorial', []);
+  e.target.textContent = '次の営業から、各具材の1回目にゲージを表示します';
+});
 $('opt-bgm').addEventListener('change', e => {
   audio.bgmOn = e.target.checked;
   store.set('bgm', audio.bgmOn);
   if (audio.ctx) audio.setBgm(audio.bgmOn);
 });
+
+// ---------------------------------------------------------------
+// 揚げ加減ゲージ（各具材の1回目だけのチュートリアル）
+//   1面目：油に浸かった面の色づきで 0 → 0.5（0.5 が返しどき）
+//   2面目：返したあとに浸かった面の色づきで 0.5 → 1.0（1.0 付近が上げどき）
+// ---------------------------------------------------------------
+const tutorialSeen = () => store.get('tutorial', []);
+function markTutorialSeen(key) {
+  const seen = tutorialSeen();
+  if (!seen.includes(key)) store.set('tutorial', [...seen, key]);
+}
+const FLIP_B = 0.78; // 返しどきの、1面目の色づき
+function gaugeOf(it) {
+  if (!it.flipCount) return { p: 0.5 * it.brownB / FLIP_B, phase: 1 };
+  const down = it.flipped ? it.brownA : it.brownB;
+  const a0 = it.flipA0 ?? 0;
+  return { p: 0.5 + 0.5 * Math.max(0, (down - a0) / Math.max(0.2, 1 - a0)), phase: 2 };
+}
+function gaugeHTML(it) {
+  const { p, phase } = gaugeOf(it);
+  const pct = (x) => Math.min(100, x / 1.3 * 100).toFixed(1) + '%';
+  let tip, cls = '';
+  if (phase === 1) {
+    if (p < 0.42) tip = '1面目を揚げています…';
+    else if (p <= 0.62) { tip = '今だ！タップで返す'; cls = 'now'; }
+    else { tip = '返して！焦げはじめます'; cls = 'warn'; }
+  } else if (p < 0.9) tip = '2面目を揚げています…';
+  else if (it.cook < 0.95) tip = 'もう少し…中まで火を通す';
+  else if (p <= 1.15) { tip = '上げどき！網へドラッグ'; cls = 'now'; }
+  else { tip = '揚げすぎ！早く上げて'; cls = 'warn'; }
+  return `<div class="gauge ${cls}">
+      <div class="g-zone ${phase === 1 ? 'flip' : 'done'}" style="left:${phase === 1 ? pct(0.42) : pct(0.5)};width:${phase === 1 ? 'calc(' + pct(0.62) + ' - ' + pct(0.42) + ')' : 'calc(' + pct(0.5) + ')'}"></div>
+      <div class="g-zone lift" style="left:${pct(0.9)};width:calc(${pct(1.15)} - ${pct(0.9)})"></div>
+      <div class="g-fill" style="width:${pct(p)}"></div>
+      <div class="g-mark" style="left:${pct(0.5)}"><span>返す</span></div>
+      <div class="g-mark" style="left:${pct(0.9)}"><span>上げる</span></div>
+    </div><div class="g-tip ${cls}">${tip}</div>`;
+}
 
 const labels = new Map();
 function updateLabels() {
@@ -881,7 +937,9 @@ function updateLabels() {
     let el = labels.get(it);
     if (!el) { el = document.createElement('div'); el.className = 'lbl'; bubblesLayer.appendChild(el); labels.set(it, el); }
     el.classList.toggle('master', state.master);
-    el.innerHTML = `${it.def.name}<span class="sec"> ${it.timeInOil.toFixed(0)}秒</span>${it.flipCount ? ' <span class="flip">↻</span>' : ''}`;
+    el.classList.toggle('tut', !!it.tutorial);
+    el.innerHTML = `${it.def.name}<span class="sec"> ${it.timeInOil.toFixed(0)}秒</span>${it.flipCount ? ' <span class="flip">↻</span>' : ''}`
+      + (it.tutorial ? gaugeHTML(it) : '');
     const p = toScreen(it.group.position.clone().add(new THREE.Vector3(0, 0.35, -it.radius * 0.5)));
     el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
   }
@@ -1203,4 +1261,4 @@ $('loading').classList.add('hidden');
 frame();
 
 // デバッグ用
-window.__tempura = { simStep, INGREDIENTS, setView, audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
+window.__tempura = { PATIENCE, simStep, INGREDIENTS, setView, audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };

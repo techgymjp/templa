@@ -228,7 +228,7 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 
 /* 視点操作の案内 */
 #view-hint {
-  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
+  position: absolute; left: 50%; top: 64px; transform: translateX(-50%);
   background: rgba(43, 29, 18, .82); color: #fff; font-weight: 700; font-size: 15px;
   padding: 10px 16px; border-radius: 12px; pointer-events: none !important;
   opacity: 0; transition: opacity .6s; text-align: center; max-width: 86%;
@@ -238,3 +238,20 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 /* 遊び方へのリンク：大きなボタンの並びから離して置く（誤タップ防止） */
 .howto-link { text-align: center; margin: 14px 0 0; }
 .howto-link a { color: var(--accent); font-weight: 700; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; padding: 6px 10px; }
+
+/* 揚げ加減ゲージ（各具材の1回目だけ） */
+.lbl.tut { padding: 4px 8px 6px; border-radius: 8px; background: rgba(43, 29, 18, .86); text-align: center; z-index: 2; }
+.gauge { position: relative; width: 132px; height: 12px; margin: 16px auto 4px; border-radius: 6px; background: rgba(255, 255, 255, .18); }
+.g-zone { position: absolute; top: 0; bottom: 0; border-radius: 6px; }
+.g-zone.flip { background: rgba(255, 216, 138, .55); }
+.g-zone.done { left: 0; background: rgba(255, 255, 255, .08); }
+.g-zone.lift { background: rgba(120, 200, 110, .6); }
+.g-fill { position: absolute; left: 0; top: 2px; bottom: 2px; border-radius: 4px; background: linear-gradient(90deg, #f3e2ad, #dca14a 70%, #b8722a); transition: width .1s linear; }
+.g-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: #fff; }
+.g-mark span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-size: 10px; white-space: nowrap; color: #ffe7b0; }
+.g-tip { font-size: 12px; font-weight: 700; color: #fff; }
+.g-tip.now { color: #9cf08c; animation: blink .8s infinite; }
+.g-tip.warn { color: #ff9b85; }
+.gauge.now { box-shadow: 0 0 0 2px #9cf08c; }
+.gauge.warn { box-shadow: 0 0 0 2px #ff9b85; }
+#btn-tutorial-reset { color: #8a6a50; }
