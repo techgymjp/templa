@@ -3,13 +3,21 @@ const L = 'stroke="#3a2514" stroke-width="2" stroke-linejoin="round" stroke-line
 
 const ICONS = {
   hotate: `
-    <path d="M32.0 52.0 L6.9 37.5 Q5.5 32.3 10.9 32.1 Q10.8 26.7 16.1 27.8 Q17.2 22.5 22.1 24.7 Q24.4 19.9 28.6 23.2 Q32.0 19.0 35.4 23.2 Q39.6 19.9 41.9 24.7 Q46.8 22.5 47.9 27.8 Q53.2 26.7 53.1 32.1 Q58.5 32.3 57.1 37.5 Z" fill="#f0a27a" ${L}/>
-    <path d="M32 52 L11.6 32.8" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L16.6 28.6" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L22.4 25.7" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L28.7 24.2" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L35.3 24.2" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L41.6 25.7" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L47.4 28.6" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L52.4 32.8" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/>
-    <path d="M23 51 h18 l-3 6 h-12z" fill="#e48a62" ${L}/>
-    <ellipse cx="32" cy="45" rx="12" ry="4.5" fill="#000" opacity="0.15"/>
-    <path d="M20 35 v7 a12 4.5 0 0 0 24 0 v-7" fill="#ece0c6" ${L}/>
-    <ellipse cx="32" cy="35" rx="12" ry="4.5" fill="#fbf6ea" ${L}/>
-    <path d="M25 35 q7 -2.5 14 0" fill="none" stroke="#e6dbc4" stroke-width="1.5"/>`,
+    <defs>
+      <linearGradient id="hs1" x1="0" x2="1"><stop offset="0" stop-color="#e7d3a8"/><stop offset="0.45" stop-color="#f8edd2"/><stop offset="1" stop-color="#dcc597"/></linearGradient>
+      <linearGradient id="hs2" x1="0" x2="1"><stop offset="0" stop-color="#e9d6ac"/><stop offset="0.45" stop-color="#faf0d8"/><stop offset="1" stop-color="#ddc79a"/></linearGradient>
+      <radialGradient id="ht1" cx="0.4" cy="0.35" r="0.8"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#efe2c3"/></radialGradient>
+      <radialGradient id="ht2" cx="0.4" cy="0.35" r="0.8"><stop offset="0" stop-color="#fffbf3"/><stop offset="1" stop-color="#f1e4c6"/></radialGradient>
+    </defs>
+    <ellipse cx="33" cy="52" rx="25" ry="5" fill="#000" opacity="0.1"/>
+    <path d="M29 26 C27 31.4 28 36.2 29.5 38 A12.5 6.5 0 0 0 54.5 38 C56 36.2 57 31.4 55 26z" fill="url(#hs1)" stroke="#9a7a50" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M33.94 31.2 q-0.8 5.4 0.5 9.600000000000001 M40.05 32.5 q-0.3 6.0 0 10.2 M46.55 32.175 q0.5 5.4 0 9.600000000000001" fill="none" stroke="#d6bf92" stroke-width="0.9" opacity="0.7"/>
+    <ellipse cx="42" cy="26" rx="13" ry="6.5" fill="url(#ht1)" stroke="#9a7a50" stroke-width="1.6" stroke-linejoin="round"/>
+    <ellipse cx="38.75" cy="24.375" rx="5.8500000000000005" ry="2.08" fill="#ffffff" opacity="0.75"/>
+    <path d="M10 33 C8 38.4 9 43.2 10.5 45 A14.5 7.5 0 0 0 39.5 45 C41 43.2 42 38.4 40 33z" fill="url(#hs2)" stroke="#9a7a50" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M15.7 39.0 q-0.8 5.4 0.5 9.600000000000001 M22.75 40.5 q-0.3 6.0 0 10.2 M30.25 40.125 q0.5 5.4 0 9.600000000000001" fill="none" stroke="#d6bf92" stroke-width="0.9" opacity="0.7"/>
+    <ellipse cx="25" cy="33" rx="15" ry="7.5" fill="url(#ht2)" stroke="#9a7a50" stroke-width="1.6" stroke-linejoin="round"/>
+    <ellipse cx="21.25" cy="31.125" rx="6.75" ry="2.4" fill="#ffffff" opacity="0.75"/>`,
   kaki: `
     <path d="M8 36 q2 -18 22 -20 q22 -2 27 16 q2 14 -16 18 q-24 6 -33 -14z" fill="#6f6b62" ${L}/>
     <path d="M14 35 q3 -12 18 -13 q16 -1 19 11 q1 9 -13 12 q-18 4 -24 -10z" fill="#d6ccb4" ${L}/>
