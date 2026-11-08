@@ -1,55 +1,56 @@
 // 具材の定義と3Dモデル生成
 import * as THREE from 'three';
 import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { TessellateModifier } from 'three/addons/modifiers/TessellateModifier.js';
 import { batterBump, speckle } from './textures.js';
 
 // ---------------------------------------------------------------
-// 揚げ物モデル
-//   cook (中の火通り)   : rate = max(0, T-100)/75 / cookTime     → 1.0 で火が通る
-//   brown (衣の揚げ色)  : rate = 2^((T-175)/15) / brownTime      → 1.0 がきつね色
-//   brownTime は「適温で揚げたとき cook=1.1 で brown=1.0」になるよう自動算出。
-//   つまり適温より高いと「外は焦げ・中は生」、低いと「白っぽく油っぽい」。
+// 揚げ物モデル（油温は店が適温に保っている。入れすぎたときだけ下がる）
+//   cook  : 中の火通り。1.0 で火が通る（cookTime 秒 @175℃）
+//   brownA/brownB : 衣の両面の揚げ色。1.0 がきつね色
+//     油に浸かっている面は速く、上の面はゆっくり色づく → 途中で返すと均一になる
+//   grease: 油温が下がった状態で揚げると増える（ベチャッ）
 // ---------------------------------------------------------------
 const DEFS = {
-  hotate:   { name: 'ほたて',   cookTime: 5,  ideal: 180, radius: 0.5 },
-  kaki:     { name: '牡蠣',     cookTime: 7,  ideal: 180, radius: 0.6 },
-  anago:    { name: '穴子',     cookTime: 11, ideal: 175, radius: 1.15 },
-  ebi:      { name: 'えび',     cookTime: 9,  ideal: 180, radius: 0.95 },
-  kisu:     { name: 'きす',     cookTime: 7,  ideal: 175, radius: 0.9 },
-  nasu:     { name: 'なす',     cookTime: 10, ideal: 175, radius: 0.85 },
-  shishito: { name: 'ししとう', cookTime: 3,  ideal: 165, radius: 0.55 },
-  renkon:   { name: 'れんこん', cookTime: 13, ideal: 170, radius: 0.65 },
-  maitake:  { name: 'まいたけ', cookTime: 6,  ideal: 165, radius: 0.65 },
-  kakiage:  { name: 'かき揚げ', cookTime: 16, ideal: 170, radius: 0.8 },
+  hotate:   { name: 'ほたて',   cookTime: 8, radius: 0.5 },
+  kaki:     { name: '牡蠣',     cookTime: 9, radius: 0.6 },
+  anago:    { name: '穴子',     cookTime: 14, radius: 1.15 },
+  ebi:      { name: 'えび',     cookTime: 11, radius: 0.95 },
+  kisu:     { name: 'きす',     cookTime: 9, radius: 0.9 },
+  nasu:     { name: 'なす',     cookTime: 12, radius: 0.85 },
+  shishito: { name: 'ししとう', cookTime: 6, radius: 0.55 },
+  renkon:   { name: 'れんこん', cookTime: 14, radius: 0.65 },
+  maitake:  { name: 'まいたけ', cookTime: 8, radius: 0.65 },
+  kakiage:  { name: 'かき揚げ', cookTime: 18, radius: 0.8 },
 };
 
-for (const [key, d] of Object.entries(DEFS)) {
-  d.key = key;
-  const tc = d.cookTime * 75 / (d.ideal - 100) * 1.1;
-  d.brownTime = tc * Math.pow(2, (d.ideal - 175) / 15);
-  d.zone = d.ideal >= 180 ? '高温' : d.ideal >= 170 ? '中温' : d.ideal >= 165 ? 'やや低温' : '低温';
-}
+for (const [key, d] of Object.entries(DEFS)) d.key = key;
 export const INGREDIENTS = DEFS;
 export const INGREDIENT_KEYS = Object.keys(DEFS);
 
-export function cookRate(def, T) { return Math.max(0, T - 100) / 75 / def.cookTime; }
-export function brownRate(def, T) { return T < 110 ? 0 : Math.pow(2, (T - 175) / 15) / def.brownTime; }
+export const SUBMERGED = 1.55, EXPOSED = 0.45;
+export function cookRate(def, T) { return Math.max(0.15, (T - 105) / 70) / def.cookTime; }
+export function brownRate(def, T) { return T < 110 ? 0 : Math.pow(2, (T - 175) / 15) / (def.cookTime * 1.1); }
 
 // ---------------------------------------------------------------
 // 評価
 // ---------------------------------------------------------------
+const gauss = (b) => Math.exp(-Math.pow((b - 1.0) / 0.32, 2));
 export function evaluate(item) {
-  const { cook: c, brown: b, grease: g } = item;
-  const colorS = Math.exp(-Math.pow((b - 1.0) / 0.3, 2));
+  const { cook: c, brownA: a, brownB: bb, grease: g } = item;
+  const b = (a + bb) / 2, uneven = Math.abs(a - bb);
+  const colorS = Math.sqrt(gauss(a) * gauss(bb));
   const cookS = c >= 1 ? 1 : Math.pow(Math.max(0, (c - 0.6) / 0.4), 2);
   const overS = c > 1.6 ? Math.max(0.5, 1 - (c - 1.6) * 0.8) : 1;
   const crispS = 1 - 0.65 * Math.min(1, g);
   const score = Math.round(100 * Math.pow(colorS, 0.8) * cookS * overS * crispS);
+  const hi = Math.max(a, bb), lo = Math.min(a, bb);
 
   let comment;
-  if (b > 1.7) comment = '真っ黒に焦げてしまった…';
-  else if (c < 0.8) comment = b > 1.2 ? '外は焦げ、中は生…油が熱すぎ' : '中がまだ生…';
-  else if (g > 0.45) comment = 'ベチャッと油っぽい…油温が低い';
+  if (hi > 1.75) comment = uneven > 0.6 ? '片面が焦げてしまった…返すのが遅い' : '真っ黒に焦げてしまった…';
+  else if (c < 0.8) comment = '中がまだ生…もう少し待とう';
+  else if (uneven > 0.5) comment = lo < 0.7 ? '片面だけ白い。途中で返そう' : '片面だけ色が濃い。返すのが遅い';
+  else if (g > 0.45) comment = 'ベチャッと油っぽい…入れすぎで油温が下がった';
   else if (b < 0.6) comment = '白っぽい。揚げが足りない';
   else if (score >= 92) comment = 'カラッと揚がった！見事！';
   else if (score >= 78) comment = 'いい揚げ色だ';
@@ -61,7 +62,8 @@ export function evaluate(item) {
   const color = b < 0.6 ? '白い' : b < 0.85 ? '薄いきつね色' : b < 1.2 ? 'きつね色' : b < 1.5 ? '濃いめ' : '焦げ';
   const doneness = c < 0.8 ? '生' : c < 1 ? '半生' : c <= 1.6 ? 'ちょうど' : '揚げすぎ';
   const crisp = g < 0.15 ? 'カラッ' : g < 0.45 ? 'ふつう' : 'ベチャ';
-  return { score, comment, color, doneness, crisp };
+  const evenness = uneven < 0.25 ? '均一' : uneven < 0.5 ? 'ややムラ' : '片面';
+  return { score, comment, color, doneness, crisp, evenness };
 }
 
 // ---------------------------------------------------------------
@@ -107,25 +109,32 @@ function noise3(x, y, z, s = 0) {
   return r;
 }
 
-// 衣：元の形を膨らませ、でこぼこを加える
-function makeCoat(geo, thick, bump, seed) {
+// 衣：元の形を細かく分割してから膨らませ、ざらざらの凹凸を加える
+function makeCoat(geo, thick, bump, seed, tinted = false, edge = 0.045) {
   let g = geo.clone();
+  if (g.attributes.uv) g.deleteAttribute('uv');
+  g = g.index ? g.toNonIndexed() : g;
+  g = new TessellateModifier(edge, 6).modify(g);
   g.deleteAttribute('normal');
   if (g.attributes.uv) g.deleteAttribute('uv');
   g = mergeVertices(g, 1e-3);
   g.computeVertexNormals();
   const p = g.attributes.position, n = g.attributes.normal;
   const v = new THREE.Vector3();
+  const base = tinted ? g.attributes.color : null;
   const col = new Float32Array(p.count * 3), uv = new Float32Array(p.count * 2);
   for (let i = 0; i < p.count; i++) {
     v.fromBufferAttribute(p, i);
     const n1 = noise3(v.x * 5, v.y * 5, v.z * 5, seed);
-    const n2 = noise3(v.x * 13, v.y * 13, v.z * 13, seed + 7);
-    const d = thick * (0.55 + 0.7 * n1) + bump * Math.pow(n2, 3) * 2.2;
+    const n2 = noise3(v.x * 14, v.y * 14, v.z * 14, seed + 7);
+    const n3 = noise3(v.x * 34, v.y * 34, v.z * 34, seed + 13);
+    const ridge = Math.pow(n2, 3) * 2.4;
+    const d = thick * (0.5 + 0.8 * n1) + bump * ridge + bump * 0.6 * (n3 - 0.5);
     p.setXYZ(i, v.x + n.getX(i) * d, v.y + n.getY(i) * d, v.z + n.getZ(i) * d);
-    // 出っ張った所は早く色づく（揚げムラ）
-    const k = 1 - Math.min(0.3, Math.pow(n2, 3) * 0.55) - n1 * 0.08;
-    col[i * 3] = k; col[i * 3 + 1] = k * 0.97; col[i * 3 + 2] = k * 0.93;
+    // 出っ張った所・薄い所は早く色づく（揚げムラ）
+    const k = 1 - Math.min(0.32, ridge * 0.22) - n1 * 0.1 + (n3 - 0.5) * 0.08;
+    const br = base ? base.getX(i) : 1, bg = base ? base.getY(i) : 1, bb = base ? base.getZ(i) : 1;
+    col[i * 3] = k * br; col[i * 3 + 1] = k * 0.965 * bg; col[i * 3 + 2] = k * 0.92 * bb;
     uv[i * 2] = v.x * 1.3 + v.y * 0.7; uv[i * 2 + 1] = v.z * 1.3 + v.y * 0.7;
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
@@ -335,31 +344,59 @@ const BUILDERS = {
     return { core, coat: base, thick: 0.025, bump: 0.03 };
   },
   kakiage() {
-    // 玉ねぎ・人参・三つ葉・小えびのかき揚げ
-    const pieces = { carrot: [], onion: [], mitsuba: [], ebi: [] };
-    const kinds = ['carrot', 'onion', 'onion', 'mitsuba', 'carrot', 'ebi'];
-    for (let i = 0; i < 26; i++) {
-      const k = kinds[i % kinds.length];
-      const r = Math.sqrt(Math.random()) * 0.5;
-      const a = Math.random() * Math.PI * 2;
-      let g;
-      if (k === 'ebi') g = new THREE.SphereGeometry(0.09, 10, 8).scale(1.4, 0.8, 1);
-      else if (k === 'onion') g = new THREE.TorusGeometry(0.16, 0.02, 5, 14, Math.PI * 0.9);
-      else g = new THREE.BoxGeometry(0.42, k === 'mitsuba' ? 0.015 : 0.04, k === 'mitsuba' ? 0.08 : 0.04);
-      g.rotateX(Math.random() * 0.8 - 0.4);
-      g.rotateY(Math.random() * Math.PI * 2);
-      g.rotateZ(Math.random() * 0.6 - 0.3);
-      g.translate(Math.cos(a) * r, (Math.random() - 0.4) * 0.18, Math.sin(a) * r);
+    // 細切りの玉ねぎ・人参と三つ葉がふんわり絡んだ「鳥の巣」状
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const pieces = { onion: [], carrot: [], mitsuba: [] };
+    const tint = { onion: '#f3e6c4', carrot: '#ef7a2a', mitsuba: '#3e7f32' };
+    const coatParts = [];
+    const dome = (r) => 0.16 * (1 - (r / 0.75) ** 2);
+    const add = (k, g) => {
       pieces[k].push(g);
+      const c = new THREE.Color(tint[k]);
+      const col = new Float32Array(g.attributes.position.count * 3);
+      for (let i = 0; i < col.length; i += 3) { col[i] = c.r; col[i + 1] = c.g; col[i + 2] = c.b; }
+      const cg = g.clone();
+      cg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      coatParts.push(cg);
+    };
+    // 玉ねぎ：薄い弧の帯
+    for (let i = 0; i < 26; i++) {
+      const R = rnd(0.18, 0.38), a0 = rnd(0, 6.28), span = rnd(1.2, 2.2);
+      const cx = rnd(-0.4, 0.4), cz = rnd(-0.4, 0.4);
+      const pts = [];
+      for (let k = 0; k <= 6; k++) {
+        const a = a0 + span * k / 6;
+        const x = cx + Math.cos(a) * R, z = cz + Math.sin(a) * R;
+        pts.push(new THREE.Vector3(x, dome(Math.hypot(x, z)) * rnd(0.3, 1.1) + rnd(-0.05, 0.05), z));
+      }
+      const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 10, 0.024, 4, false);
+      add('onion', g);
+    }
+    // 人参：細い千切り
+    for (let i = 0; i < 24; i++) {
+      const r = Math.sqrt(Math.random()) * 0.6, a = rnd(0, 6.28), dir = rnd(0, 6.28), L = rnd(0.35, 0.6);
+      const x0 = Math.cos(a) * r, z0 = Math.sin(a) * r;
+      const pts = [0, 0.5, 1].map(t => {
+        const x = x0 + Math.cos(dir) * L * (t - 0.5), z = z0 + Math.sin(dir) * L * (t - 0.5);
+        return new THREE.Vector3(x, dome(Math.min(0.75, Math.hypot(x, z))) * rnd(0.4, 1.2) + (t === 0.5 ? 0.04 : 0), z);
+      });
+      add('carrot', new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 6, 0.013, 4, false));
+    }
+    // 三つ葉：小さな葉
+    for (let i = 0; i < 8; i++) {
+      const r = Math.sqrt(Math.random()) * 0.5, a = rnd(0, 6.28);
+      const g = new THREE.SphereGeometry(0.075, 10, 6);
+      g.scale(1.3, 0.25, 0.9);
+      g.rotateY(rnd(0, 6.28)); g.rotateX(rnd(-0.4, 0.4));
+      g.translate(Math.cos(a) * r, dome(r) + 0.02, Math.sin(a) * r);
+      add('mitsuba', g);
     }
     const core = [];
     for (const [k, arr] of Object.entries(pieces)) {
-      if (!arr.length) continue;
-      const mat = k === 'ebi' ? MAT.ebi : MAT[k];
-      core.push(new THREE.Mesh(mergeGeometries(arr.map(g => g.toNonIndexed ? (g.index ? g.toNonIndexed() : g) : g)), mat));
+      const mat = k === 'onion' ? MAT.onion : k === 'carrot' ? MAT.carrot : MAT.mitsuba;
+      core.push(new THREE.Mesh(mergeGeometries(arr), mat));
     }
-    const base = blob(0.5, 1.45, 0.38, 1.45, 0, 0, 0, 0, 0, 30, 14);
-    return { core, coat: base, thick: 0.06, bump: 0.09 };
+    return { core, coat: mergeGeometries(coatParts), thick: 0.012, bump: 0.012, tinted: true, edge: 0.06 };
   },
 };
 
@@ -378,56 +415,81 @@ const hanaGeo = (() => {
   return g;
 })();
 
+// 衣のマテリアル：両面の色を別々に持つ（物体の上向き面 = A、下向き面 = B）
+function coatMaterial(uTop, uBottom) {
+  const m = new THREE.MeshPhysicalMaterial({
+    color: '#ffffff', roughness: 0.35, metalness: 0, vertexColors: true,
+    bumpMap: batterBump(), bumpScale: 1.6,
+    clearcoat: 0.8, clearcoatRoughness: 0.3, sheen: 0.4, sheenRoughness: 0.8, sheenColor: new THREE.Color('#fff2d0'),
+    transparent: true, opacity: 0.75,
+  });
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uTop = uTop;
+    sh.uniforms.uBottom = uBottom;
+    sh.vertexShader = 'varying float vSide;\n' + sh.vertexShader.replace('#include <beginnormal_vertex>',
+      '#include <beginnormal_vertex>\n  vSide = smoothstep(-0.5, 0.5, objectNormal.y);');
+    sh.fragmentShader = 'uniform vec3 uTop;\nuniform vec3 uBottom;\nvarying float vSide;\n' + sh.fragmentShader.replace('#include <color_fragment>',
+      '#include <color_fragment>\n  diffuseColor.rgb *= mix(uBottom, uTop, vSide);');
+  };
+  m.customProgramCacheKey = () => 'tempura-coat';
+  return m;
+}
+
 export class Tempura {
   constructor(key) {
     this.def = INGREDIENTS[key];
     this.key = key;
     this.cook = 0;
-    this.brown = 0;
+    this.brownA = 0; // 物体の上側の面
+    this.brownB = 0; // 物体の下側の面
+    this.flipped = false; // false: B が油に浸かっている
     this.grease = 0;
     this.moisture = 1;
     this.timeInOil = 0;
-    this.state = 'raw'; // raw → coating → flying → oil → lifted → served
+    this.sheen = 1; // 揚げたての油のつや
+    this.state = 'raw'; // raw → coating → flying → oil (held) → lifted → served
     this.seed = Math.floor(Math.random() * 1000);
 
     const b = BUILDERS[key]();
     this.group = new THREE.Group();
+    this.flipper = new THREE.Group(); // 返すときに回す
     this.inner = new THREE.Group();
-    this.group.add(this.inner);
-    for (const m of b.core) { m.castShadow = true; this.inner.add(m); }
+    this.group.add(this.flipper);
+    this.flipper.add(this.inner);
+    for (const m of b.core) { m.castShadow = true; m.receiveShadow = true; this.inner.add(m); }
 
-    // 衣（具材ごとに数パターンをキャッシュ）
-    const variant = this.seed % 3;
+    const variant = this.seed % 2;
     const ck = key + variant;
-    if (!coatCache.has(ck)) coatCache.set(ck, makeCoat(b.coat, b.thick, b.bump, variant * 31 + 3));
+    if (!coatCache.has(ck)) coatCache.set(ck, makeCoat(b.coat, b.thick, b.bump, variant * 31 + 3, b.tinted, b.edge));
     const coatGeo = coatCache.get(ck);
 
-    this.coatMat = new THREE.MeshStandardMaterial({
-      color: batterColor(0), roughness: 0.3, metalness: 0, transparent: true, opacity: 0.7,
-      vertexColors: true, bumpMap: batterBump(), bumpScale: 1.6,
-    });
+    this.uTop = { value: batterColor(0) };
+    this.uBottom = { value: batterColor(0) };
+    this.coatMat = coatMaterial(this.uTop, this.uBottom);
     this.coat = new THREE.Mesh(coatGeo, this.coatMat);
     this.coat.castShadow = true;
+    this.coat.receiveShadow = true;
     this.coat.renderOrder = 2;
     this.coat.visible = false;
     this.inner.add(this.coat);
 
-    // 花（衣のちりちり）
+    // 花（衣のちりちり）：側面と下側に多く付く
     const pos = coatGeo.attributes.position, nor = coatGeo.attributes.normal;
-    const N = Math.round(40 + this.def.radius * 50);
+    const N = Math.round(60 + this.def.radius * 90);
     this.hana = new THREE.InstancedMesh(hanaGeo, this.coatMat, N);
-    this.hana.castShadow = false;
     this.hana.visible = false;
     this.hanaData = [];
     const v = new THREE.Vector3(), n = new THREE.Vector3();
-    for (let i = 0; i < N; i++) {
+    for (let i = 0, guard = 0; i < N && guard < N * 20; guard++) {
       const idx = Math.floor(Math.random() * pos.count);
-      v.fromBufferAttribute(pos, idx);
       n.fromBufferAttribute(nor, idx);
-      // 下側の面（油に浸かる側）と側面に多めに
-      const s = 0.025 + Math.random() * 0.05;
-      this.hanaData.push({ p: v.clone().addScaledVector(n, s * 0.4), s, rot: new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6) });
+      if (n.y > 0.4 && Math.random() < 0.8) continue;
+      v.fromBufferAttribute(pos, idx);
+      const s = 0.018 + Math.pow(Math.random(), 2) * 0.06;
+      this.hanaData.push({ p: v.clone().addScaledVector(n, s * 0.5), s, rot: new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6) });
+      i++;
     }
+    this.hana.count = this.hanaData.length;
     this.inner.add(this.hana);
     this.setHanaGrowth(0);
 
@@ -436,6 +498,10 @@ export class Tempura {
     this.bobPhase = Math.random() * 10;
     this.spin = (Math.random() - 0.5) * 0.15;
   }
+
+  get brown() { return (this.brownA + this.brownB) / 2; }
+  // 今、油に浸かっている面 / 上に出ている面
+  get downSide() { return this.flipped ? 'A' : 'B'; }
 
   setHanaGrowth(k) {
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
@@ -457,18 +523,19 @@ export class Tempura {
   }
 
   updateLook() {
+    batterColor(this.brownA, this.uTop.value);
+    batterColor(this.brownB, this.uBottom.value);
     const b = this.brown;
-    batterColor(b, this.coatMat.color);
-    // 濡れた衣→乾いたカリカリの衣
     const dry = Math.min(1, this.cook * 0.9 + b * 0.3);
-    this.coatMat.roughness = 0.28 + 0.5 * dry;
-    this.coatMat.opacity = Math.min(1, 0.7 + 0.35 * dry + b * 0.2);
-    if (this.coatMat.opacity >= 0.999 && this.coatMat.transparent) {
-      this.coatMat.transparent = false; this.coatMat.needsUpdate = true;
-    }
-    // 揚げたては少しテカリ
-    // 揚げたての油のテカリ
-    this.coatMat.bumpScale = 1.2 + dry * 2.0;
+    const m = this.coatMat;
+    m.roughness = 0.3 + 0.45 * dry;
+    m.opacity = Math.min(1, 0.75 + 0.35 * dry + b * 0.2);
+    if (m.opacity >= 0.999 && m.transparent) { m.transparent = false; m.needsUpdate = true; }
+    m.bumpScale = 1.2 + dry * 2.2;
+    // 生の衣は濡れたつや、揚げたては油のつや、油を切ると落ち着く
+    m.clearcoat = 0.25 + 0.6 * this.sheen;
+    m.clearcoatRoughness = 0.15 + 0.4 * (1 - this.sheen);
+    m.sheen = 0.5 * (1 - dry);
   }
 
   dispose() {

@@ -63,22 +63,86 @@ function tex(c, { repeat = 1, srgb = false } = {}) {
 const cache = {};
 const once = (k, f) => cache[k] || (cache[k] = f());
 
-// 檜のカウンター
+// 檜のカウンター（柾目）
 export const hinoki = () => once('hinoki', () => {
   const S = 1024, c = canvas(S), ctx = c.getContext('2d');
   const img = ctx.createImageData(S, S);
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
     const u = x / S, v = y / S;
-    const warp = fbm(u, v, 3, 4, 2) * 2.2;
-    const ring = Math.sin((v * 34 + warp * 6 + fbm(u, v, 8, 2, 9) * 0.6) * Math.PI);
-    const g = Math.pow(Math.abs(ring), 7);
-    const fine = fbm(u, v * 0.2, 64, 2, 5);
+    // 木目は横方向にほぼまっすぐ、ゆるやかにうねる
+    const t = v * 46 + fbm(u, v, 2, 3, 2) * 2.2 + fbm(u, v, 6, 2, 12) * 0.35;
+    const ring = t - Math.floor(t);
+    const late = Math.pow(Math.max(0, (ring - 0.72) / 0.28), 2.2);
+    const fiber = fbm(u * 0.5, v, 96, 2, 5) - 0.5;
+    const blotch = fbm(u, v, 3, 3, 9) - 0.5;
+    const k = 1 - late * 0.16 + fiber * 0.07 + blotch * 0.06;
     const i = (y * S + x) * 4;
-    const k = 1 - g * 0.18 - fine * 0.07;
-    img.data[i] = 232 * k; img.data[i + 1] = 204 * k; img.data[i + 2] = 158 * k * (1 - g * 0.1); img.data[i + 3] = 255;
+    img.data[i] = Math.min(255, 228 * k);
+    img.data[i + 1] = Math.min(255, 200 * k * (1 - late * 0.03));
+    img.data[i + 2] = Math.min(255, 152 * k * (1 - late * 0.08));
+    img.data[i + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
   return tex(c, { srgb: true });
+});
+
+// ステンレス（ヘアライン＋小傷）の粗さマップ
+export const brushedSteel = () => once('steel', () => {
+  const S = 1024, c = canvas(S), ctx = c.getContext('2d');
+  const img = ctx.createImageData(S, S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const line = fbm(x / S * 0.02, y / S, 300, 2, 3);
+    const smudge = fbm(x / S, y / S, 3, 4, 17);
+    const v = 0.3 + (line - 0.5) * 0.08 + (smudge - 0.5) * 0.12;
+    const i = (y * S + x) * 4;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = Math.max(0, Math.min(255, v * 255)); img.data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 0.7;
+  for (let n = 0; n < 220; n++) {
+    const x = Math.random() * S, y = Math.random() * S, a = Math.random() * 6.28, l = 10 + Math.random() * 70;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); ctx.stroke();
+  }
+  return tex(c, { repeat: 2 });
+});
+
+// 土壁
+export const plaster = () => once('plaster', () => {
+  const S = 512, c = canvas(S), ctx = c.getContext('2d');
+  const img = ctx.createImageData(S, S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const n = fbm(x / S, y / S, 5, 5, 71);
+    const straw = hash2(x, y, 4) > 0.997 ? 0.25 : 0;
+    const k = 0.75 + n * 0.45 + straw;
+    const i = (y * S + x) * 4;
+    img.data[i] = Math.min(255, 118 * k); img.data[i + 1] = Math.min(255, 92 * k); img.data[i + 2] = Math.min(255, 66 * k); img.data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return tex(c, { srgb: true, repeat: 3 });
+});
+
+// 布地（織り目）の法線
+export const fabricNormal = () => once('fabric', () => {
+  const S = 256, h = new Float32Array(S * S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const wx = Math.sin(x / S * Math.PI * 2 * 64), wy = Math.sin(y / S * Math.PI * 2 * 64);
+    h[y * S + x] = (((Math.floor(x / 4) + Math.floor(y / 4)) % 2) ? wx : wy) * 0.5 + fbm(x / S, y / S, 8, 2, 33) * 0.6;
+  }
+  return tex(heightToNormal(h, S, 1.5), { repeat: 3 });
+});
+
+// 髪の毛の流れ（法線）
+export const hairNormal = () => once('hair', () => {
+  const S = 256, h = new Float32Array(S * S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) h[y * S + x] = fbm(x / S, y / S * 0.03, 64, 3, 44);
+  return tex(heightToNormal(h, S, 4));
+});
+
+// 肌の細かいムラ
+export const skinNormal = () => once('skin', () => {
+  const S = 256, h = new Float32Array(S * S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) h[y * S + x] = fbm(x / S, y / S, 32, 3, 55) * 0.6;
+  return tex(heightToNormal(h, S, 1.2), { repeat: 2 });
 });
 
 // 槌目の銅（色・法線・粗さ）

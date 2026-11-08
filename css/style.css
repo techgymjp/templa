@@ -75,7 +75,7 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
   padding: 4px 12px; font-weight: 700; font-size: 18px; display: flex; gap: 6px; align-items: baseline;
   box-shadow: 0 2px 0 var(--ink); white-space: nowrap;
 }
-.chip .k, .heat .k { font-size: 12px; color: #6a4a30; }
+.chip .k { font-size: 12px; color: #6a4a30; }
 #btn-pause { padding: 4px 10px; border-radius: 999px; font-size: 13px; }
 
 /* speech bubbles above customers */
@@ -110,24 +110,6 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 @keyframes bubble { from { transform: translate(-50%, -80%) scale(.4); opacity: 0; } }
 @keyframes shake { 50% { transform: translate(-50%, -100%) rotate(-2deg); } }
 
-#thermo {
-  position: absolute; right: 14px; top: 64px; width: 64px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-}
-.thermo-label { font-size: 12px; font-weight: 700; color: var(--paper); text-shadow: 0 1px 2px #000; }
-.thermo-tube {
-  position: relative; width: 22px; height: 220px; border: 2px solid var(--ink); border-radius: 12px;
-  background: #f8f1e2; overflow: hidden;
-}
-/* tube covers 100..230 ℃ */
-.zone { position: absolute; left: 0; right: 0; opacity: .5; }
-.z-low  { bottom: calc((150 - 100) / 130 * 100%); height: calc(15 / 130 * 100%); background: #7fb1d8; }
-.z-mid  { bottom: calc((165 - 100) / 130 * 100%); height: calc(15 / 130 * 100%); background: #f2c14e; }
-.z-high { bottom: calc((180 - 100) / 130 * 100%); height: calc(15 / 130 * 100%); background: #e87a3a; }
-#thermo-fill { position: absolute; left: 6px; right: 6px; bottom: 0; height: 0; background: var(--accent); border-radius: 6px 6px 0 0; transition: height .15s linear; }
-#thermo-hidden { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; background: #e9dcc0; }
-#thermo.masked #thermo-hidden { display: flex; }
-#temp-value { font-weight: 700; color: var(--paper); text-shadow: 0 1px 3px #000; font-size: 16px; }
-
 #warn {
   position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
   background: var(--accent); color: #fff; font-weight: 700; padding: 6px 14px; border-radius: 8px;
@@ -145,25 +127,9 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 }
 .ing svg { display: block; }
 .ing .i-name { font-family: var(--font-title); font-size: 20px; font-weight: 400; line-height: 1.1; }
-.ing .i-temp { font-size: 10px; color: #6a4a30; font-weight: 500; }
 .ing.wanted { background: #fff3c4; }
-#controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
-@media (min-width: 900px) {
-  #controls {
-    position: fixed; right: 14px; top: 330px; flex-direction: column; align-items: stretch; width: 150px;
-  }
-  #controls .heat { flex-direction: column; gap: 2px; padding: 8px; }
-  #controls .heat input { width: 120px; }
-}
-.heat {
-  display: flex; align-items: center; gap: 8px; background: rgba(246, 239, 223, .94);
-  border: 2px solid var(--ink); border-radius: 10px; padding: 6px 12px; box-shadow: 0 3px 0 var(--ink); font-weight: 700;
-}
-.heat input { width: 160px; accent-color: var(--accent); }
-#heat-value { min-width: 3em; text-align: center; }
-
 #hint {
-  position: absolute; left: 50%; bottom: 140px; transform: translateX(-50%);
+  position: absolute; left: 50%; bottom: 100px; transform: translateX(-50%);
   color: var(--paper); font-size: 13px; text-shadow: 0 1px 3px #000; text-align: center; width: min(90%, 520px);
   transition: opacity 1s;
 }
@@ -203,9 +169,6 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 
 @media (max-width: 640px) {
   h1 { font-size: 40px; }
-  #thermo { right: 4px; top: 46%; width: 48px; }
-  .thermo-tube { height: 130px; width: 18px; }
-  #temp-value { font-size: 13px; }
   .chip { font-size: 14px; padding: 2px 8px; }
   #bottombar { gap: 6px; padding: 0 6px; }
   #ingredients {
@@ -216,13 +179,6 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
   .ing { min-width: 58px; flex: 0 0 auto; padding: 2px 4px 3px; }
   .ing svg { width: 26px; height: 26px; }
   .ing .i-name { font-size: 13px; }
-  .ing .i-temp { font-size: 9px; }
-  #controls { flex-wrap: nowrap; gap: 6px; width: 100%; }
-  #controls button { font-size: 12px; padding: 7px 8px; white-space: nowrap; }
-  .heat { padding: 4px 8px; gap: 4px; flex: 1; min-width: 0; }
-  .heat .k { display: none; }
-  .heat input { width: 100%; min-width: 60px; }
-  #heat-value { font-size: 13px; min-width: 2.6em; }
   .speech { min-width: 52px; padding: 2px 5px 4px; border-radius: 12px; }
   .speech svg { width: 32px; height: 32px; }
   .speech .sp-name { font-size: 11px; }
@@ -232,3 +188,17 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
   #warn { bottom: 140px; font-size: 13px; }
   .lbl { font-size: 10px; }
 }
+
+/* 注文は具材の絵だけ */
+.speech .sp-icon svg { display: block; }
+.speech.urgent { background: #fbe1da; }
+.speech.urgent::before { border-top-color: #fbe1da; }
+.lbl .flip { color: #ffd88a; font-weight: 700; }
+#btn-bgm { padding: 4px 10px; border-radius: 999px; font-size: 13px; }
+#btn-bgm.off { opacity: .6; }
+#rack-hint {
+  position: absolute; right: 8%; top: 46%; padding: 6px 12px; border-radius: 8px;
+  background: rgba(43, 29, 18, .75); color: #fff; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
+}
+#rack-hint.on { opacity: 1; }
+#hint b { color: #ffd88a; }

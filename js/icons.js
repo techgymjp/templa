@@ -51,11 +51,61 @@ const ICONS = {
     <path d="M10 34 q2 -10 12 -10 q-2 -10 10 -12 q10 -2 12 8 q10 -2 12 8 q0 8 -10 8 q-6 6 -16 2 q-10 6 -20 -4z" fill="#6b5440" ${L}/>
     <path d="M16 32 q6 -4 12 0 M30 20 q6 -2 10 2 M38 30 q6 -3 12 0" fill="none" stroke="#a08668" stroke-width="2"/>`,
   kakiage: `
-    <path d="M8 38 q-2 -16 18 -20 q16 -4 28 6 q8 8 2 18 q-10 10 -28 8 q-16 -2 -20 -12z" fill="#e7b25a" ${L}/>
-    <path d="M14 30 l14 4 M30 22 l12 10 M20 42 l18 -4" stroke="#e8762a" stroke-width="3" stroke-linecap="round"/>
-    <path d="M22 26 q6 6 0 12 M40 38 q-6 -4 -2 -10" fill="none" stroke="#f7f0d8" stroke-width="2.5"/>
-    <path d="M44 22 l6 6 M12 40 l6 -2" stroke="#3f8f35" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="34" cy="40" r="3" fill="#f08a6a"/>`,
+    <ellipse cx="32" cy="47" rx="24" ry="6" fill="#000" opacity="0.1"/>
+    <path d="M10 38 q2 -16 22 -18 q20 2 22 18 q-6 8 -22 8 q-16 0 -22 -8z" fill="#e9c27a" opacity="0.55"/>
+    <path d="M39.2 32.7 Q32.4 38.1 22.1 35.3" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M39.2 32.7 Q32.4 38.1 22.1 35.3" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M39.8 30.1 Q36.1 35.5 26.5 34.7" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M39.8 30.1 Q36.1 35.5 26.5 34.7" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M28.9 23.7 Q35.6 25.9 34.0 30.4" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M28.9 23.7 Q35.6 25.9 34.0 30.4" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M14.9 31.1 Q22.1 25.1 33.7 27.8" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M14.9 31.1 Q22.1 25.1 33.7 27.8" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M37.4 36.1 Q27.6 34.4 27.6 28.3" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M37.4 36.1 Q27.6 34.4 27.6 28.3" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M30.5 38.3 Q18.1 40.0 12.7 33.1" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M30.5 38.3 Q18.1 40.0 12.7 33.1" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M44.5 34.6 Q41.5 39.0 33.6 38.6" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M44.5 34.6 Q41.5 39.0 33.6 38.6" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M22.8 41.0 Q14.7 37.5 18.6 32.0" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M22.8 41.0 Q14.7 37.5 18.6 32.0" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M27.2 24.2 Q37.3 22.6 42.5 28.0" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M27.2 24.2 Q37.3 22.6 42.5 28.0" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M31.6 26.0 Q42.8 25.7 46.2 32.1" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M31.6 26.0 Q42.8 25.7 46.2 32.1" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M41.1 23.3 Q48.8 23.7 50.4 28.3" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M41.1 23.3 Q48.8 23.7 50.4 28.3" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M32.8 21.5 Q43.9 23.5 43.0 30.4" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M32.8 21.5 Q43.9 23.5 43.0 30.4" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M28.9 27.5 Q37.4 22.6 47.3 26.5" fill="none" stroke="#8a5a20" stroke-width="4.2" stroke-linecap="round"/>
+    <path d="M28.9 27.5 Q37.4 22.6 47.3 26.5" fill="none" stroke="#f4dfa8" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M30.6 39.3 Q28.5 37.7 22.4 40.2" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M37.3 26.0 Q36.5 26.3 31.8 30.5" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M47.8 39.0 Q52.3 38.8 52.7 42.7" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M37.4 25.4 Q39.8 25.4 38.2 29.5" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M19.7 26.0 Q19.3 25.3 14.8 28.7" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M23.9 31.6 Q23.0 30.4 18.0 33.2" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M30.4 34.3 Q27.7 33.4 21.0 36.5" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M43.6 29.7 Q46.7 30.0 45.7 34.2" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M44.3 41.3 Q49.4 40.2 50.4 43.2" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M23.4 29.0 Q25.6 29.6 23.9 34.3" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M24.4 25.1 Q27.4 25.3 26.4 29.6" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M34.1 41.2 Q33.7 41.3 29.3 45.5" fill="none" stroke="#e2621a" stroke-width="1.9" stroke-linecap="round"/>
+    <ellipse cx="22" cy="30" rx="4" ry="2.6" transform="rotate(-20 22 30)" fill="#2f6e2a" stroke="#1e4a1c" stroke-width="1"/>
+    <ellipse cx="40" cy="26" rx="4.2" ry="2.8" transform="rotate(25 40 26)" fill="#2f6e2a" stroke="#1e4a1c" stroke-width="1"/>
+    <ellipse cx="36" cy="40" rx="3.6" ry="2.4" transform="rotate(-10 36 40)" fill="#2f6e2a" stroke="#1e4a1c" stroke-width="1"/>
+    <ellipse cx="27" cy="41" rx="3" ry="2" transform="rotate(30 27 41)" fill="#2f6e2a" stroke="#1e4a1c" stroke-width="1"/>
+    <ellipse cx="46" cy="36" rx="3.2" ry="2.2" transform="rotate(0 46 36)" fill="#2f6e2a" stroke="#1e4a1c" stroke-width="1"/>
+    <circle cx="35.8" cy="37.8" r="0.8" fill="#d9a24a"/>
+    <circle cx="44.8" cy="39.5" r="1.5" fill="#d9a24a"/>
+    <circle cx="41.5" cy="33.3" r="1.1" fill="#d9a24a"/>
+    <circle cx="19.3" cy="37.1" r="0.8" fill="#d9a24a"/>
+    <circle cx="18.2" cy="30.3" r="0.9" fill="#d9a24a"/>
+    <circle cx="26.9" cy="27.8" r="0.8" fill="#d9a24a"/>
+    <circle cx="20.8" cy="28.6" r="1.1" fill="#d9a24a"/>
+    <circle cx="16.8" cy="41.0" r="1.3" fill="#d9a24a"/>
+    <circle cx="20.8" cy="31.0" r="1.1" fill="#d9a24a"/>
+    <circle cx="27.7" cy="29.0" r="1.5" fill="#d9a24a"/>`,
 };
 
 export function iconSVG(key, size = 48) {
