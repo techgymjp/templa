@@ -3,6 +3,10 @@
 泡と音で揚げ頃を見極め、両面を返して、てんぷらを「カラッと」揚げる 3D Web ゲームです。
 Three.js（CDN 読み込み）だけで動き、ビルドは不要です。画像・音声ファイルも使わず、テクスチャと揚げ音はすべてプログラムで生成しています。
 
+## 言語
+
+日本語と英語に対応しています。ブラウザの言語設定で自動に選び（日本語以外は英語）、タイトル画面の「日本語 / English」で切り替えられます（選んだ言語は記憶）。URL に `?lang=en` / `?lang=ja` を付けても切り替えられます。英語版の遊び方は [howto.en.html](https://techgymjp.github.io/templa/howto.en.html)。
+
 ## 遊び方
 
 詳しい遊び方は [howto.html](https://techgymjp.github.io/templa/howto.html) にまとめています。
@@ -70,7 +74,8 @@ python3 -m http.server 8000
 ## ファイル構成
 
 - `index.html` — 画面と UI
-- `howto.html` — 遊び方ページ
+- `howto.html` / `howto.en.html` — 遊び方ページ（日本語 / 英語）
+- `js/i18n.js` — 日本語・英語の文言と切り替え
 - `js/quality.js` — 画質（軽量表示）の判定
 - `css/style.css` — スタイル
 - `js/main.js` — ゲーム進行・揚げ物の物理・泡・湯気・お客さん・入力・後処理

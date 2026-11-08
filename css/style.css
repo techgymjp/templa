@@ -278,3 +278,19 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
   .g-tip { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 }
+
+/* 言語の切り替え */
+.lang-switch { text-align: center; margin: 8px 0 0; font-size: 14px; color: #8a6a50; }
+.lang-switch button { background: none; border: none; box-shadow: none; padding: 4px 6px; font-size: 14px; color: #8a6a50; text-decoration: underline; text-underline-offset: 3px; }
+.lang-switch button.on { color: var(--ink); text-decoration: none; font-weight: 700; }
+.lang-switch button:active { transform: none; }
+
+/* 英語表示：筆文字フォントは日本語用なので、英語は丸ゴシックで */
+html[lang="en"] .ing .i-name, html[lang="en"] .g-name, html[lang="en"] .speech .sp-talk,
+html[lang="en"] .toast .c, html[lang="en"] #loading-text { font-family: var(--font-ui); font-weight: 700; letter-spacing: 0; }
+html[lang="en"] .ing .i-name { font-size: 14px; }
+html[lang="en"] h1 { letter-spacing: .02em; }
+@media (max-width: 640px) {
+  html[lang="en"] .ing .i-name { font-size: 12px; }
+  html[lang="en"] h1 { font-size: 34px; }
+}

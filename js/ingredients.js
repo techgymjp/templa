@@ -4,6 +4,7 @@ import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometr
 import { TessellateModifier } from 'three/addons/modifiers/TessellateModifier.js';
 import { batterBump, speckle } from './textures.js';
 import { LOW } from './quality.js';
+import { t, ingName } from './i18n.js';
 
 // ---------------------------------------------------------------
 // 揚げ物モデル（油温は店が適温に保っている。入れすぎたときだけ下がる）
@@ -26,7 +27,7 @@ const DEFS = {
   kakiage:  { name: 'かき揚げ', cookTime: 18, radius: 0.8, flip: 13, lift: 23 },
 };
 
-for (const [key, d] of Object.entries(DEFS)) d.key = key;
+for (const [key, d] of Object.entries(DEFS)) { d.key = key; d.name = ingName(key); }
 export const INGREDIENTS = DEFS;
 export const INGREDIENT_KEYS = Object.keys(DEFS);
 
@@ -49,22 +50,22 @@ export function evaluate(item) {
   const hi = Math.max(a, bb), lo = Math.min(a, bb);
 
   let comment;
-  if (hi > 1.75) comment = uneven > 0.6 ? '片面が焦げてしまった…返すのが遅い' : '真っ黒に焦げてしまった…';
-  else if (c < 0.8) comment = '中がまだ生…もう少し待とう';
-  else if (uneven > 0.5) comment = lo < 0.7 ? '片面だけ白い。途中で返そう' : '片面だけ色が濃い。返すのが遅い';
-  else if (g > 0.45) comment = 'ベチャッと油っぽい…入れすぎで油温が下がった';
-  else if (b < 0.6) comment = '白っぽい。揚げが足りない';
-  else if (score >= 92) comment = 'カラッと揚がった！見事！';
-  else if (score >= 78) comment = 'いい揚げ色だ';
-  else if (c > 1.6) comment = '揚げすぎて固くなった';
-  else if (score >= 55) comment = 'まずまず';
-  else if (b > 1.3) comment = 'ちょっと色が濃い';
-  else comment = 'もうひと息';
+  if (hi > 1.75) comment = t(uneven > 0.6 ? 'cBurntSide' : 'cBurnt');
+  else if (c < 0.8) comment = t('cRaw');
+  else if (uneven > 0.5) comment = t(lo < 0.7 ? 'cOneWhite' : 'cOneDark');
+  else if (g > 0.45) comment = t('cGreasy');
+  else if (b < 0.6) comment = t('cPale');
+  else if (score >= 92) comment = t('cPerfect');
+  else if (score >= 78) comment = t('cNice');
+  else if (c > 1.6) comment = t('cOver');
+  else if (score >= 55) comment = t('cFair');
+  else if (b > 1.3) comment = t('cDarkish');
+  else comment = t('cAlmost');
 
-  const color = b < 0.6 ? '白い' : b < 0.85 ? '薄いきつね色' : b < 1.2 ? 'きつね色' : b < 1.5 ? '濃いめ' : '焦げ';
-  const doneness = c < 0.8 ? '生' : c < 1 ? '半生' : c <= 1.6 ? 'ちょうど' : '揚げすぎ';
-  const crisp = g < 0.15 ? 'カラッ' : g < 0.45 ? 'ふつう' : 'ベチャ';
-  const evenness = uneven < 0.25 ? '均一' : uneven < 0.5 ? 'ややムラ' : '片面';
+  const color = t('colors')[b < 0.6 ? 0 : b < 0.85 ? 1 : b < 1.2 ? 2 : b < 1.5 ? 3 : 4];
+  const doneness = t('donenesses')[c < 0.8 ? 0 : c < 1 ? 1 : c <= 1.6 ? 2 : 3];
+  const crisp = t('crisps')[g < 0.15 ? 0 : g < 0.45 ? 1 : 2];
+  const evenness = t('evens')[uneven < 0.25 ? 0 : uneven < 0.5 ? 1 : 2];
   return { score, comment, color, doneness, crisp, evenness };
 }
 

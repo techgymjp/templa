@@ -12,6 +12,9 @@ import { softDot } from './textures.js';
 import { FryAudio } from './audio.js';
 import { iconSVG } from './icons.js';
 import { LOW } from './quality.js';
+import { t, LANG, setLang, applyStatic } from './i18n.js';
+
+applyStatic();
 
 const $ = (id) => document.getElementById(id);
 // 画面（タイトル・一時停止・結果）を出した直後 0.5 秒以内に「触れた」タップは無視して、二度押しの誤タップを防ぐ。
@@ -536,8 +539,8 @@ function showEvaluation(it, ev, pos) {
   const p = toScreen(pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
   const el = document.createElement('div');
   el.className = 'toast' + (ev.score >= 90 ? ' great' : ev.score < 50 ? ' bad' : '');
-  el.innerHTML = `<div class="s">${ev.score}<small>点</small></div><div class="c">${ev.comment}</div>
-    <div class="d">揚げ色:${ev.color} ／ 両面:${ev.evenness} ／ 火通り:${ev.doneness} ／ 食感:${ev.crisp}</div>`;
+  el.innerHTML = `<div class="s">${ev.score}<small>${t('pts')}</small></div><div class="c">${ev.comment}</div>
+    <div class="d">${t('detail', { color: ev.color, even: ev.evenness, done: ev.doneness, crisp: ev.crisp })}</div>`;
   el.style.left = clamp(p.x, 110, innerWidth - 110) + 'px';
   el.style.top = clamp(p.y, 120, innerHeight) + 'px';
   $('toasts').appendChild(el);
@@ -629,7 +632,7 @@ function updateCustomers(dt) {
       c.el.classList.toggle('urgent', r < 0.3);
       if (r < 0.3 && c.mood !== 'angry') c.setMood('angry');
       if (c.patience <= 0) {
-        say(c, 'もういいよ！', 'angry');
+        say(c, t('leaveAngry'), 'angry');
         c.state = 'leaving'; c.st = 0;
         audio.bad();
         state.stats.missed++;
@@ -643,7 +646,7 @@ function updateCustomers(dt) {
         c.eating = false;
         c.idx++;
         if (c.idx < c.orders.length) showOrder(seat);
-        else { say(c, 'ごちそうさま！', 'happy'); c.state = 'leaving'; c.st = 0; c.setMood('happy'); }
+        else { say(c, t('thanks'), 'happy'); c.state = 'leaving'; c.st = 0; c.setMood('happy'); }
       }
     } else if (c.state === 'leaving') {
       if (c.st > 1.4) {
@@ -710,10 +713,10 @@ function serve(rec, seat) {
     const speed = isFinite(c.maxPatience) ? clamp(c.patience / c.maxPatience, 0, 1) : 0.5;
     let pts = quality + Math.round(speed * 20);
     let text, cls, mood;
-    if (quality >= 90) { text = 'カラッと最高！'; cls = 'happy'; mood = 'happy'; }
-    else if (quality >= 75) { text = 'うまい！'; cls = 'happy'; mood = 'happy'; }
-    else if (quality >= 50) { text = 'うん、悪くない'; cls = ''; mood = 'eat'; }
-    else { text = 'これはちょっと…'; cls = 'angry'; mood = 'sad'; pts = Math.round(pts * 0.3); }
+    if (quality >= 90) { text = t('great'); cls = 'happy'; mood = 'happy'; }
+    else if (quality >= 75) { text = t('good'); cls = 'happy'; mood = 'happy'; }
+    else if (quality >= 50) { text = t('ok'); cls = ''; mood = 'eat'; }
+    else { text = t('bad'); cls = 'angry'; mood = 'sad'; pts = Math.round(pts * 0.3); }
     if (state.master) pts = Math.round(pts * 1.3);
     say(c, `${text}<span class="sp-pts">+${pts}</span>`, cls);
     c.setMood(mood);
@@ -877,6 +880,10 @@ function updateIngredientButtons() {
 }
 
 $('opt-bgm').checked = audio.bgmOn;
+document.querySelectorAll('[data-lang]').forEach(b => {
+  b.classList.toggle('on', b.dataset.lang === LANG);
+  b.addEventListener('click', () => { if (b.dataset.lang !== LANG) setLang(b.dataset.lang); });
+});
 $('opt-bgm').addEventListener('change', e => {
   audio.bgmOn = e.target.checked;
   store.set('bgm', audio.bgmOn);
@@ -897,15 +904,15 @@ function markTutorialSeen(key) { tutorialDone.add(key); }
 const guideBox = $('guide');
 const guideCards = new Map();
 function guideTip(it) {
-  const t = it.timeInOil, { flip, lift } = it.def;
+  const tt = it.timeInOil, { flip, lift } = it.def;
   if (!it.flipCount) {
-    if (t < flip - 0.5) return { text: `あと${Math.ceil(flip - t)}秒で返す`, cls: '' };
-    if (t <= flip + 1.5) return { text: '今だ！タップで返す', cls: 'now' };
-    return { text: '返して！焦げはじめます', cls: 'warn' };
+    if (tt < flip - 0.5) return { text: t('gFlipIn', { n: Math.ceil(flip - tt) }), cls: '' };
+    if (tt <= flip + 1.5) return { text: t('gFlipNow'), cls: 'now' };
+    return { text: t('gFlipLate'), cls: 'warn' };
   }
-  if (t < lift - 0.5) return { text: `あと${Math.ceil(lift - t)}秒で上げる`, cls: '' };
-  if (t <= lift + 2) return { text: '上げどき！網へドラッグ', cls: 'now' };
-  return { text: '揚げすぎ！早く上げて', cls: 'warn' };
+  if (tt < lift - 0.5) return { text: t('gLiftIn', { n: Math.ceil(lift - tt) }), cls: '' };
+  if (tt <= lift + 2) return { text: t('gLiftNow'), cls: 'now' };
+  return { text: t('gLiftLate'), cls: 'warn' };
 }
 function updateGuide() {
   // スマホでは具材ボタンのすぐ上に出す
@@ -924,15 +931,15 @@ function updateGuide() {
       el.className = 'g-card';
       el.innerHTML = `<div class="g-head">${iconSVG(it.key, 30)}<span class="g-name">${it.def.name}</span><span class="g-sec"></span></div>
         <div class="g-bar"><div class="g-fill"></div>
-          <div class="g-tick flip" style="left:${pct(flip)}"><span class="l">${flip}秒 返す</span><span class="s">${flip}</span></div>
-          <div class="g-tick lift" style="left:${pct(lift)}"><span class="l">${lift}秒 上げる</span><span class="s">${lift}</span></div></div>
+          <div class="g-tick flip" style="left:${pct(flip)}"><span class="l">${t('tickFlip', { n: flip })}</span><span class="s">${flip}</span></div>
+          <div class="g-tick lift" style="left:${pct(lift)}"><span class="l">${t('tickLift', { n: lift })}</span><span class="s">${lift}</span></div></div>
         <div class="g-tip"></div>`;
       guideBox.appendChild(el);
       guideCards.set(it, el);
     }
     const tip = guideTip(it);
     el.className = 'g-card ' + tip.cls;
-    el.querySelector('.g-sec').innerHTML = `${Math.floor(it.timeInOil)}<small>秒</small>`;
+    el.querySelector('.g-sec').innerHTML = `${Math.floor(it.timeInOil)}<small>${t('sec')}</small>`;
     el.querySelector('.g-fill').style.width = pct(it.timeInOil);
     el.querySelector('.g-tip').textContent = tip.text;
   }
@@ -948,7 +955,7 @@ function updateLabels() {
     let el = labels.get(it);
     if (!el) { el = document.createElement('div'); el.className = 'lbl'; bubblesLayer.appendChild(el); labels.set(it, el); }
     el.classList.toggle('master', state.master);
-    el.innerHTML = `<span class="nm">${it.def.name}</span><span class="sec">${Math.floor(it.timeInOil)}<small>秒</small></span>${it.flipCount ? '<span class="flip">↻</span>' : ''}`;
+    el.innerHTML = `<span class="nm">${it.def.name}</span><span class="sec">${Math.floor(it.timeInOil)}<small>${t('sec')}</small></span>${it.flipCount ? '<span class="flip">↻</span>' : ''}`;
     const p = toScreen(it.group.position.clone().add(new THREE.Vector3(0, 0.35, -it.radius * 0.5)));
     el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
   }
@@ -957,12 +964,12 @@ function updateLabels() {
 
 function updateHUD() {
   if (state.mode === 'shift') {
-    const t = Math.max(0, Math.ceil(state.time));
-    $('time').textContent = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+    const rest = Math.max(0, Math.ceil(state.time));
+    $('time').textContent = `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, '0')}`;
   } else $('time').textContent = '∞';
   const w = $('warn');
-  const msg = performance.now() < potFullUntil ? '鍋がいっぱい。揚がったものから網に上げよう'
-    : state.temp < 155 && oilItems().length ? '入れすぎで油温が下がっている…ベチャッとなるぞ' : '';
+  const msg = performance.now() < potFullUntil ? t('warnFull')
+    : state.temp < 155 && oilItems().length ? t('warnTemp') : '';
   w.textContent = msg;
   w.classList.toggle('hidden', !msg);
 }
@@ -1073,8 +1080,8 @@ async function prepareAll() {
   const el = $('loading'), bar = $('loading-bar'), txt = $('loading-text');
   el.classList.remove('hidden');
   const set = (k, msg) => { bar.style.width = Math.round(k * 100) + '%'; txt.textContent = msg; };
-  set(0, '仕込み中…（音）');
-  await audio.prepare(k => set(k * 0.5, '仕込み中…（音）'));
+  set(0, t('prepSound'));
+  await audio.prepare(k => set(k * 0.5, t('prepSound')));
   const tmp = [];
   for (let i = 0; i < INGREDIENT_KEYS.length; i++) {
     const key = INGREDIENT_KEYS[i];
@@ -1085,12 +1092,12 @@ async function prepareAll() {
       scene.add(it.group);
       tmp.push(it);
     }
-    set(0.5 + (i + 1) / INGREDIENT_KEYS.length * 0.45, `仕込み中…（${INGREDIENTS[key].name}）`);
+    set(0.5 + (i + 1) / INGREDIENT_KEYS.length * 0.45, t('prepIng', { name: INGREDIENTS[key].name }));
     await new Promise(r => setTimeout(r, 0));
   }
   renderer.compile(scene, camera);
   for (const it of tmp) { scene.remove(it.group); it.dispose(); }
-  set(1, '仕込み完了');
+  set(1, t('prepDone'));
   await new Promise(r => setTimeout(r, 150));
   el.classList.add('hidden');
   ready = true;
@@ -1126,20 +1133,20 @@ function endGame() {
   const st = state.stats;
   const avg = st.fried ? Math.round(st.qualSum / st.fried) : 0;
   // 自動プレイでの検証にもとづく基準（名人の腕前で約2400点。天ぷらの神は職人モード×1.3が必要）
-  const ranks = [[0, '見習い'], [500, '駆け出し'], [1000, '一人前'], [1500, '板前'], [2000, '名人'], [2700, '天ぷらの神']];
+  const ranks = [0, 500, 1000, 1500, 2000, 2700].map((s, i) => [s, t('ranks')[i]]);
   let rank = ranks[0][1];
   for (const [s, r] of ranks) if (state.score >= s) rank = r;
   $('rank').textContent = rank;
-  const comment = avg >= 85 ? '泡と音がよく見えている。見事な揚げ場でした。' : avg >= 70 ? 'いい腕だ。返すタイミングを揃えればもっと良くなる。' : avg >= 50 ? '泡が細かくなるまで待ち、途中で一度返してみよう。' : '泡の変化をよく見て、途中で返すところから始めよう。';
+  const comment = t(avg >= 85 ? 'res85' : avg >= 70 ? 'res70' : avg >= 50 ? 'res50' : 'res0');
   $('result-body').innerHTML = `<table>
-    <tr><td>売上</td><td>${state.score} 点</td></tr>
-    <tr><td>お出しした天ぷら</td><td>${st.served} 品</td></tr>
-    <tr><td>揚げた数</td><td>${st.fried} 品</td></tr>
-    <tr><td>平均の出来</td><td>${avg} 点</td></tr>
-    <tr><td>最高の一品</td><td>${st.best} 点</td></tr>
-    <tr><td>カラッと（90点以上）</td><td>${st.perfect} 品</td></tr>
-    <tr><td>帰ってしまったお客さん</td><td>${st.missed} 人</td></tr>
-    ${state.master ? '<tr><td>職人モード</td><td>×1.3</td></tr>' : ''}
+    <tr><td>${t('rSales')}</td><td>${state.score} ${t('uPts')}</td></tr>
+    <tr><td>${t('rServed')}</td><td>${st.served} ${t('uItems')}</td></tr>
+    <tr><td>${t('rFried')}</td><td>${st.fried} ${t('uItems')}</td></tr>
+    <tr><td>${t('rAvg')}</td><td>${avg} ${t('uPts')}</td></tr>
+    <tr><td>${t('rBest')}</td><td>${st.best} ${t('uPts')}</td></tr>
+    <tr><td>${t('rPerfect')}</td><td>${st.perfect} ${t('uItems')}</td></tr>
+    <tr><td>${t('rMissed')}</td><td>${st.missed} ${t('uPeople')}</td></tr>
+    ${state.master ? `<tr><td>${t('rMaster')}</td><td>×1.3</td></tr>` : ''}
   </table><div class="comment">${comment}</div>`;
   showOverlay('result');
   $('hud').classList.add('hidden');

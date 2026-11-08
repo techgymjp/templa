@@ -50,7 +50,8 @@
     td, th { padding: 6px 8px; border-bottom: 1px dashed #c8b48c; text-align: left; vertical-align: top; }
     th { white-space: nowrap; }
     .back { display: flex; gap: 10px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
-    .top-back { margin: 0 0 12px; }
+    .top-back { margin: 0 0 12px; display: flex; justify-content: space-between; align-items: center; }
+    .lang-link { color: var(--paper); font-weight: 700; }
     @media (max-width: 640px) {
       h1 { font-size: 34px; }
       .page { padding: 16px 14px 20px; }
@@ -59,7 +60,7 @@
 </head>
 <body>
   <main>
-    <p class="top-back"><a class="btn" href="./">← ゲームに戻る</a></p>
+    <p class="top-back"><a class="btn" href="./?lang=ja">← ゲームに戻る</a> <a class="lang-link" href="howto.en.html">English</a></p>
     <div class="page">
       <h1>遊び方</h1>
       <p class="sub">お客さんの注文どおりに、天ぷらを「カラッと」揚げてお出ししよう。</p>
@@ -84,7 +85,7 @@
       </div>
 
       <h2>揚げ時間ガイド（営業ごとに、各具材の1回目）</h2>
-      <p>営業のたびに、各具材の<em>1回目</em>を揚げている間は、画面の左端に<em>揚げ時間ガイド</em>が出ます。「えびは8秒で返して、15秒で上げる」といった目安を覚えるためのものです。</p>
+      <p>営業のたびに、各具材の<em>1回目</em>を揚げている間は、画面の端（パソコンは左端、スマホは具材ボタンの上）に<em>揚げ時間ガイド</em>が出ます。「えびは8秒で返して、15秒で上げる」といった目安を覚えるためのものです。</p>
       <ul>
         <li>今の秒数と、「返す」「上げる」の秒数の目盛りが出ます。</li>
         <li>返す秒数になると<em>「今だ！タップで返す」</em>、上げる秒数になると<em>「上げどき！網へドラッグ」</em>と光ります。</li>
@@ -118,7 +119,7 @@
         <li>返すのは一度だけ。1面目を少し長めに揚げてから返すと、両面がきれいにそろいます。</li>
         <li>職人モードでは秒数が出ないので、泡と音で見極めましょう。</li>
         <li>時間のかかるかき揚げ・れんこん・穴子は、早めに入れておきましょう。</li>
-        <li>鍋に一度にたくさん入れると油温が下がります。4〜5 個までがおすすめ。</li>
+        <li>鍋に一度にたくさん入れると油温が下がります。3〜4 個までがおすすめ。</li>
         <li>注文のない具材を揚げても、あとから来た同じ注文に出せます（ただし時間がたつとしんなり）。</li>
       </ul>
 
@@ -128,7 +129,7 @@
         <li><b>BGM</b>：J.S.バッハ「平均律クラヴィーア曲集 第1巻 前奏曲 ハ長調」。タイトル画面でオン・オフできます。</li>
       </ul>
 
-      <div class="back"><a class="btn" href="./">ゲームに戻る</a></div>
+      <div class="back"><a class="btn" href="./?lang=ja">ゲームに戻る</a></div>
     </div>
   </main>
   <script type="module">

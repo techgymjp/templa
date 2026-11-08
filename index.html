@@ -24,9 +24,9 @@
   <!-- HUD -->
   <div id="hud" class="hidden">
     <div id="topbar">
-      <div class="chip"><span class="k">残り</span><span id="time">2:30</span></div>
-      <div class="chip"><span class="k">売上</span><span id="score">0</span></div>
-      <button id="btn-pause" class="ghost" title="一時停止">❚❚</button>
+      <div class="chip"><span class="k" data-i18n="remain">残り</span><span id="time">2:30</span></div>
+      <div class="chip"><span class="k" data-i18n="sales">売上</span><span id="score">0</span></div>
+      <button id="btn-pause" class="ghost" title="一時停止" data-i18n-title="pause">❚❚</button>
     </div>
 
     <div id="warn" class="hidden"></div>
@@ -43,36 +43,37 @@
   <!-- タイトル -->
   <div id="title" class="overlay">
     <div class="card">
-      <h1>てんぷら職人</h1>
-      <p class="sub">油の音を聴き、泡を見て、カラッと揚げろ。</p>
+      <h1 data-i18n="title">てんぷら職人</h1>
+      <p class="sub" data-i18n="tagline">油の音を聴き、泡を見て、カラッと揚げろ。</p>
       <div class="modes">
-        <button class="primary" data-mode="shift">営業開始（2分30秒）</button>
+        <button class="primary" data-mode="shift" data-i18n="start">営業開始（2分30秒）</button>
       </div>
-      <label class="check"><input type="checkbox" id="opt-master" /> 職人モード：揚げ時間を隠す（得点 ×1.3）</label>
-      <label class="check"><input type="checkbox" id="opt-bgm" checked /> BGM（バッハ 平均律 前奏曲 ハ長調）</label>
-      <p class="howto-link"><a href="howto.html">遊び方を見る ›</a></p>
-      <p class="tiny">音が出ます。</p>
+      <label class="check"><input type="checkbox" id="opt-master" /> <span data-i18n="master">職人モード：揚げ時間を隠す（得点 ×1.3）</span></label>
+      <label class="check"><input type="checkbox" id="opt-bgm" checked /> <span data-i18n="bgm">BGM（バッハ 平均律 前奏曲 ハ長調）</span></label>
+      <p class="howto-link"><a href="howto.html" data-i18n="howto" data-i18n-href="howtoHref">遊び方を見る ›</a></p>
+      <p class="lang-switch"><button type="button" data-lang="ja">日本語</button> / <button type="button" data-lang="en">English</button></p>
+      <p class="tiny" data-i18n="sound">音が出ます。</p>
     </div>
   </div>
 
   <div id="pause" class="overlay hidden">
     <div class="card small">
-      <h2>一時停止</h2>
+      <h2 data-i18n="paused">一時停止</h2>
       <div class="modes">
-        <button class="primary" id="btn-resume">再開</button>
-        <button id="btn-quit">タイトルへ</button>
+        <button class="primary" id="btn-resume" data-i18n="resume">再開</button>
+        <button id="btn-quit" data-i18n="toTitle">タイトルへ</button>
       </div>
     </div>
   </div>
 
   <div id="result" class="overlay hidden">
     <div class="card">
-      <h2>本日の営業終了</h2>
+      <h2 data-i18n="closed">本日の営業終了</h2>
       <div id="rank"></div>
       <div id="result-body"></div>
       <div class="modes">
-        <button class="primary" data-mode="shift">もう一度</button>
-        <button id="btn-title">タイトルへ</button>
+        <button class="primary" data-mode="shift" data-i18n="again">もう一度</button>
+        <button id="btn-title" data-i18n="toTitle">タイトルへ</button>
       </div>
     </div>
   </div>
@@ -80,7 +81,7 @@
   <div id="loading" class="overlay">
     <div class="loading-box">
       <div class="spinner"></div>
-      <div id="loading-text">読み込み中…</div>
+      <div id="loading-text" data-i18n="loading">読み込み中…</div>
       <div class="loading-track"><div id="loading-bar"></div></div>
     </div>
   </div>
