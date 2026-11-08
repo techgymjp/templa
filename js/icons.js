@@ -3,11 +3,13 @@ const L = 'stroke="#3a2514" stroke-width="2" stroke-linejoin="round" stroke-line
 
 const ICONS = {
   hotate: `
-    <ellipse cx="32" cy="44" rx="20" ry="6" fill="#d9c9a6" ${L}/>
-    <path d="M12 30 v13 a20 6 0 0 0 40 0 v-13" fill="#f3e9d4" ${L}/>
-    <ellipse cx="32" cy="30" rx="20" ry="7" fill="#fbf5e8" ${L}/>
-    <path d="M20 30 q12 -4 24 0" fill="none" stroke="#e2d4b6" stroke-width="2"/>
-    <path d="M16 38 v4 M48 38 v4" stroke="#e2d4b6" stroke-width="2"/>`,
+    <path d="M32.0 52.0 L6.9 37.5 Q5.5 32.3 10.9 32.1 Q10.8 26.7 16.1 27.8 Q17.2 22.5 22.1 24.7 Q24.4 19.9 28.6 23.2 Q32.0 19.0 35.4 23.2 Q39.6 19.9 41.9 24.7 Q46.8 22.5 47.9 27.8 Q53.2 26.7 53.1 32.1 Q58.5 32.3 57.1 37.5 Z" fill="#f0a27a" ${L}/>
+    <path d="M32 52 L11.6 32.8" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L16.6 28.6" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L22.4 25.7" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L28.7 24.2" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L35.3 24.2" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L41.6 25.7" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L47.4 28.6" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/><path d="M32 52 L52.4 32.8" stroke="#c2643c" stroke-width="1.5" opacity="0.8"/>
+    <path d="M23 51 h18 l-3 6 h-12z" fill="#e48a62" ${L}/>
+    <ellipse cx="32" cy="45" rx="12" ry="4.5" fill="#000" opacity="0.15"/>
+    <path d="M20 35 v7 a12 4.5 0 0 0 24 0 v-7" fill="#ece0c6" ${L}/>
+    <ellipse cx="32" cy="35" rx="12" ry="4.5" fill="#fbf6ea" ${L}/>
+    <path d="M25 35 q7 -2.5 14 0" fill="none" stroke="#e6dbc4" stroke-width="1.5"/>`,
   kaki: `
     <path d="M8 36 q2 -18 22 -20 q22 -2 27 16 q2 14 -16 18 q-24 6 -33 -14z" fill="#6f6b62" ${L}/>
     <path d="M14 35 q3 -12 18 -13 q16 -1 19 11 q1 9 -13 12 q-18 4 -24 -10z" fill="#d6ccb4" ${L}/>
