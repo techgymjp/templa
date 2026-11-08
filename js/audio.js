@@ -98,7 +98,7 @@ export class FryAudio {
     if (!this.ctx || this.bgmTimer) return;
     const ctx = this.ctx;
     this.bgmGain = ctx.createGain();
-    this.bgmGain.gain.value = this.bgmOn ? 0.075 : 0;
+    this.bgmGain.gain.value = this.bgmOn ? 0.2 : 0;
     // 小さなホールの残響
     const conv = ctx.createConvolver();
     const len = ctx.sampleRate * 2.2, ir = ctx.createBuffer(2, len, ctx.sampleRate);
@@ -171,7 +171,7 @@ export class FryAudio {
     this.bgmOn = on;
     if (!this.ctx) return;
     if (!this.bgmTimer) this.startBgm();
-    this.bgmGain.gain.setTargetAtTime(on ? 0.075 : 0, this.ctx.currentTime, 0.3);
+    this.bgmGain.gain.setTargetAtTime(on ? 0.2 : 0, this.ctx.currentTime, 0.3);
   }
 
   suspend() { this.ctx?.suspend(); }

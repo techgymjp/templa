@@ -19,10 +19,23 @@ const ICONS = {
     <ellipse cx="25" cy="33" rx="15" ry="7.5" fill="url(#ht2)" stroke="#9a7a50" stroke-width="1.6" stroke-linejoin="round"/>
     <ellipse cx="21.25" cy="31.125" rx="6.75" ry="2.4" fill="#ffffff" opacity="0.75"/>`,
   kaki: `
-    <path d="M8 36 q2 -18 22 -20 q22 -2 27 16 q2 14 -16 18 q-24 6 -33 -14z" fill="#6f6b62" ${L}/>
-    <path d="M14 35 q3 -12 18 -13 q16 -1 19 11 q1 9 -13 12 q-18 4 -24 -10z" fill="#d6ccb4" ${L}/>
-    <path d="M16 35 q4 3 2 6 q4 2 3 5 q5 1 6 4 q5 0 8 2" fill="none" stroke="#4a4038" stroke-width="2.5"/>
-    <ellipse cx="34" cy="31" rx="7" ry="4" fill="#efe7d4"/>`,
+    <defs>
+      <radialGradient id="kb1" cx="0.42" cy="0.38" r="0.75"><stop offset="0" stop-color="#fbf7ec"/><stop offset="0.7" stop-color="#e6dfcb"/><stop offset="1" stop-color="#b9b39f"/></radialGradient>
+      <radialGradient id="kb2" cx="0.42" cy="0.38" r="0.75"><stop offset="0" stop-color="#fdf9ef"/><stop offset="0.7" stop-color="#e9e2ce"/><stop offset="1" stop-color="#bcb6a2"/></radialGradient>
+      <radialGradient id="kf1" cx="0.5" cy="0.5" r="0.6"><stop offset="0.75" stop-color="#6d6458"/><stop offset="1" stop-color="#2c241d"/></radialGradient>
+      <radialGradient id="kf2" cx="0.5" cy="0.5" r="0.6"><stop offset="0.75" stop-color="#6f665a"/><stop offset="1" stop-color="#2c241d"/></radialGradient>
+    </defs>
+    <ellipse cx="32" cy="53" rx="25" ry="5" fill="#000" opacity="0.1"/>
+    <path d="M54.0 31.1 Q54.0 34.0 50.2 33.8 Q48.7 36.5 45.4 35.1 Q42.9 37.4 40.4 35.1 Q37.3 36.6 35.8 33.5 Q32.4 34.0 32.0 30.5 Q28.7 29.7 29.3 26.3 Q26.3 24.3 27.8 21.5 Q25.6 18.5 28.0 16.9 Q27.0 13.4 30.1 13.3 Q30.8 10.1 34.3 11.6 Q36.6 9.2 40.0 12.0 Q43.7 10.8 46.2 14.5 Q50.6 14.6 51.6 18.4 Q55.8 19.7 55.1 22.9 Q58.2 25.1 55.9 27.4 Q57.5 30.1 54.0 31.1z" fill="url(#kf1)" stroke="#4a3a2c" stroke-width="1.5" stroke-linejoin="round"/>
+    <ellipse cx="41" cy="24" rx="12" ry="8" transform="rotate(28.6 41 24)" fill="url(#kb1)"/>
+    <path d="M35.1 25.4 q5.2 4.5 11.0 -0.5" transform="rotate(28.6 41 24)" fill="none" stroke="#c9c1ac" stroke-width="1.4" opacity="0.8"/>
+    <ellipse cx="38.4" cy="20.9" rx="4.9" ry="2.0" transform="rotate(28.6 41 24)" fill="#ffffff" opacity="0.8"/>
+    <path d="M35.3 27.8 L33.4 26.6 L33.0 24.8 L31.7 23.2 L32.2 21.7 L31.7 20.0 L33.1 19.0 L33.5 17.5 L35.4 17.3 L36.7 16.3 L38.8 16.8 L40.7 16.4 L42.6 17.6" fill="none" stroke="#5d544a" stroke-width="1.6" stroke-linejoin="round" opacity="0.85"/>
+    <path d="M41.8 31.9 Q43.9 34.2 41.1 37.4 Q42.0 40.7 38.5 42.8 Q38.2 46.5 34.4 47.2 Q33.1 50.8 29.4 50.1 Q27.0 53.0 23.7 51.1 Q20.4 53.1 17.8 50.3 Q13.7 51.0 12.3 47.9 Q8.1 47.3 8.2 44.1 Q4.8 42.2 6.7 39.4 Q4.9 36.4 8.5 34.3 Q8.6 30.6 13.4 29.6 Q15.6 25.7 20.6 25.9 Q24.3 22.5 28.4 24.1 Q32.8 21.8 35.3 24.6 Q39.4 23.8 39.9 27.3 Q43.2 28.2 41.8 31.9z" fill="url(#kf2)" stroke="#4a3a2c" stroke-width="1.5" stroke-linejoin="round"/>
+    <ellipse cx="25" cy="38" rx="15" ry="10" transform="rotate(-20.1 25 38)" fill="url(#kb2)"/>
+    <path d="M17.8 39.6 q6.4 5.5 13.6 -0.6" transform="rotate(-20.1 25 38)" fill="none" stroke="#c9c1ac" stroke-width="1.4" opacity="0.8"/>
+    <ellipse cx="21.8" cy="34.1" rx="6.1" ry="2.4" transform="rotate(-20.1 25 38)" fill="#ffffff" opacity="0.8"/>
+    <path d="M23.9 46.3 L21.2 47.1 L19.3 46.1 L16.7 45.9 L15.8 44.3 L13.8 43.3 L14.0 41.3 L12.9 39.7 L14.3 37.7 L14.4 35.7 L16.6 34.2 L17.8 32.2 L20.4 31.4" fill="none" stroke="#5d544a" stroke-width="1.6" stroke-linejoin="round" opacity="0.85"/>`,
   anago: `
     <path d="M4 34 q14 -10 28 -4 t28 -2 l0 8 q-14 6 -28 2 t-28 4z" fill="#3f3328" ${L}/>
     <path d="M6 33 q13 -8 26 -3 t26 -2 l0 3 q-14 5 -26 1 t-26 3z" fill="#f1e8da"/>
