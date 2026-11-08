@@ -1,6 +1,7 @@
 // 什器・店内・お客さんの3Dモデル
 import * as THREE from 'three';
 import * as TX from './textures.js';
+import { LOW } from './quality.js';
 
 export const POT = { x: 0, z: -0.4, R: 2.96 };           // 油面の中心と半径（油面 y=0）
 export const BOWL = new THREE.Vector3(-5.6, 0.3, 0.0);   // 衣ボウル（台の上）
@@ -21,12 +22,12 @@ export function rackSlots() {
 
 export function setupRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, LOW ? 1.25 : 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = LOW ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   return renderer;
 }
 
@@ -64,7 +65,7 @@ export function buildScene(renderer) {
   const key = new THREE.DirectionalLight('#fff1dc', 1.6);
   key.position.set(-4, 16, 6);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(LOW ? 1024 : 2048, LOW ? 1024 : 2048);
   key.shadow.radius = 4;
   Object.assign(key.shadow.camera, { left: -11, right: 11, top: 11, bottom: -11, near: 1, far: 40 });
   key.shadow.bias = -0.0004;
@@ -165,16 +166,23 @@ export function buildScene(renderer) {
   }
 
   // ---- 油 ----
-  const oilGeo = new THREE.RingGeometry(0.001, POT.R, 80, 22);
+  const oilGeo = new THREE.RingGeometry(0.001, POT.R, LOW ? 48 : 80, LOW ? 12 : 22);
   oilGeo.rotateX(-Math.PI / 2);
   const oilN = TX.oilNormal();
   oilN.repeat.set(2.5, 2.5);
   // 透き通った油：鍋底や沈んだ具材が琥珀色に透けて見える
-  const oilMat = new THREE.MeshPhysicalMaterial({
-    color: '#ffffff', roughness: 0.02, metalness: 0, ior: 1.47,
-    transmission: 1, thickness: 0.8, attenuationColor: new THREE.Color('#e9b048'), attenuationDistance: 1.6,
-    specularIntensity: 1, normalMap: oilN, normalScale: new THREE.Vector2(0.1, 0.1), envMapIntensity: 1.2,
-  });
+  const oilMat = LOW
+    // 軽量版：屈折の追加描画をしない半透明の油
+    ? new THREE.MeshPhysicalMaterial({
+      color: '#6e3f0c', roughness: 0.04, metalness: 0, transparent: true, opacity: 0.84, depthWrite: false,
+      specularIntensity: 1, normalMap: oilN, normalScale: new THREE.Vector2(0.12, 0.12), envMapIntensity: 1.6,
+    })
+    : new THREE.MeshPhysicalMaterial({
+      color: '#ffffff', roughness: 0.02, metalness: 0, ior: 1.47,
+      transmission: 1, thickness: 0.15, attenuationColor: new THREE.Color('#e9b048'), attenuationDistance: 0.3,
+      specularIntensity: 1, normalMap: oilN, normalScale: new THREE.Vector2(0.1, 0.1), envMapIntensity: 1.2,
+    });
+
   const oil = new THREE.Mesh(oilGeo, oilMat);
   oil.position.set(POT.x, 0, POT.z);
   oil.receiveShadow = false;
@@ -275,8 +283,9 @@ export function buildScene(renderer) {
 
   // ---- 菜箸 ----
   const hashi = new THREE.Group();
-  const bamboo = new THREE.MeshStandardMaterial({ color: '#d9b77e', roughness: 0.5 });
-  const tipMat = new THREE.MeshStandardMaterial({ color: '#8a6a40', roughness: 0.6 });
+  // 透過扱いにして、油の屈折表現（透過パス）に菜箸が映り込んで二重に見えるのを防ぐ
+  const bamboo = new THREE.MeshStandardMaterial({ color: '#d9b77e', roughness: 0.5, transparent: true, opacity: 1 });
+  const tipMat = new THREE.MeshStandardMaterial({ color: '#8a6a40', roughness: 0.6, transparent: true, opacity: 1 });
   hashi.sticks = [];
   for (let i = 0; i < 2; i++) {
     const s = new THREE.Group();

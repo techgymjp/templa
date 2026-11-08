@@ -31,6 +31,12 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 button:disabled { opacity: .45; cursor: default; }
 button.primary { background: var(--accent); color: #fff; border-color: #5a120e; box-shadow: 0 3px 0 #5a120e; }
 button.ghost { background: rgba(246, 239, 223, .9); }
+a.btn {
+  display: inline-block; font-weight: 700; font-size: 15px; text-decoration: none;
+  border: 2px solid var(--ink); background: var(--paper); color: var(--ink);
+  border-radius: 10px; padding: 9px 14px; box-shadow: 0 3px 0 var(--ink);
+}
+a.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 
 /* ---------- overlays ---------- */
 .overlay {
@@ -176,21 +182,22 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
   h1 { font-size: 40px; }
   .chip { font-size: 14px; padding: 2px 8px; }
   #bottombar { gap: 6px; padding: 0 6px; }
+  /* 具材ボタンは 5 列 × 2 行 */
   #ingredients {
-    flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; width: 100%;
-    padding: 2px 2px 6px; scrollbar-width: none;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;
+    width: 100%; overflow: visible; padding: 2px 0 4px;
   }
-  #ingredients::-webkit-scrollbar { display: none; }
-  .ing { min-width: 58px; flex: 0 0 auto; padding: 2px 4px 3px; }
-  .ing svg { width: 26px; height: 26px; }
-  .ing .i-name { font-size: 13px; }
-  .speech { min-width: 52px; padding: 2px 5px 4px; border-radius: 12px; }
-  .speech svg { width: 32px; height: 32px; }
+  .ing { min-width: 0; padding: 3px 2px 4px; }
+  .ing svg { width: 30px; height: 30px; }
+  .ing .i-name { font-size: 13px; white-space: nowrap; }
+  /* 注文の吹き出しは大きく */
+  .speech { min-width: 0; padding: 4px 6px 5px; border-radius: 14px; }
+  .speech svg { width: 52px; height: 52px; }
   .speech .sp-name { font-size: 11px; }
   .speech .sp-bar { width: 40px; }
   .speech .sp-talk { font-size: 13px; }
-  #hint { bottom: 140px; font-size: 12px; }
-  #warn { bottom: 140px; font-size: 13px; }
+  #hint { bottom: 150px; font-size: 12px; }
+  #warn { bottom: 150px; font-size: 13px; }
   .lbl { font-size: 10px; }
 }
 

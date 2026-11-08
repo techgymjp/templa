@@ -30,7 +30,7 @@ jobs:
       - name: 公開ファイルをまとめる
         run: |
           mkdir _site
-          cp -r index.html css js .nojekyll _site/
+          cp -r index.html howto.html css js .nojekyll _site/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

@@ -11,6 +11,7 @@ import * as S from './scene.js';
 import { softDot } from './textures.js';
 import { FryAudio } from './audio.js';
 import { iconSVG } from './icons.js';
+import { LOW } from './quality.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -43,8 +44,6 @@ controls.maxAzimuthAngle = 0.45;
 controls.rotateSpeed = 0.5;
 
 // 写真らしさのための後処理：環境遮蔽（接地感）・光のにじみ・周辺減光と粒子感
-const QUERY = new URLSearchParams(location.search);
-const LOW = QUERY.get('q') === 'low' || Math.min(window.innerWidth, window.innerHeight) < 700;
 const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: LOW ? 0 : 4 }));
 composer.addPass(new RenderPass(scene, camera));
 let gtao = null;
@@ -57,6 +56,7 @@ if (!LOW) {
   } catch (e) { gtao = null; }
 }
 const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.18, 0.5, 0.92);
+bloom.enabled = !LOW;
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 const finish = new ShaderPass({
@@ -78,12 +78,12 @@ composer.addPass(finish);
 const viewInfo = {};
 // 上のバー（残り時間など）と吹き出しの高さ（px）。吹き出しが必ず頭の上に収まるよう構図を決める
 const HUD_TOP = 52;
-function bubbleHeight() { return window.innerWidth <= 640 ? 60 : 84; }
+function bubbleHeight() { return window.innerWidth <= 640 ? 76 : 84; }
 const BASE_FOV = 34;
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false);
-  composer.setSize(w, h);
+  if (!LOW) composer.setSize(w, h);
   if (gtao) gtao.setSize(w * renderer.getPixelRatio(), h * renderer.getPixelRatio());
   const need = w < h ? 0.95 : 1.55; // 横に見せたい幅の比
   const f0 = Math.max(1, need / (w / h));
@@ -91,7 +91,7 @@ function resize() {
   // 鍋の手前のふちが「下の具材ボタン」より上に収まる構図を探す
   const anchorY = S.COUNTER_Y + 0.3 + 2.15;
   const minY = HUD_TOP + bubbleHeight() + 14;
-  const maxY = h - (w <= 640 ? 92 : 100);
+  const maxY = h - (w <= 640 ? 150 : 100); // スマホは具材ボタンが 2 行
   const potFront = new THREE.Vector3(S.POT.x, 0.6, S.POT.z + 3.3);
   const screenY = (v) => (-v.clone().project(camera).y * 0.5 + 0.5) * h;
   let f = f0, shift = 0;
@@ -142,7 +142,7 @@ function tween(dur, fn, done) { const t = { t: 0, dur, fn, done }; tweens.push(t
 // ---------------------------------------------------------------
 // 泡：具材のまわりの細かい泡の層と、はじける大きめの泡
 // ---------------------------------------------------------------
-const BUB_N = 3200;
+const BUB_N = LOW ? 1400 : 3200;
 const bubbleMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 6),
   new THREE.MeshPhysicalMaterial({ color: '#fff3d2', roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.05, transparent: true, opacity: 0.55, envMapIntensity: 2.2, depthWrite: false }),
   BUB_N);
@@ -276,6 +276,7 @@ function updateSteam(dt) {
 // ---------------------------------------------------------------
 const oilPos = world.oilGeo.attributes.position;
 const oilBase = Float32Array.from(oilPos.array);
+let oilFrame = 0;
 function updateOil(time) {
   const agit = state.items.filter(i => i.state === 'oil');
   for (let i = 0; i < oilPos.count; i++) {
@@ -289,7 +290,7 @@ function updateOil(time) {
     oilPos.array[i * 3 + 1] = y;
   }
   oilPos.needsUpdate = true;
-  world.oilGeo.computeVertexNormals();
+  if (!LOW || (++oilFrame & 1)) world.oilGeo.computeVertexNormals();
   world.oilMat.normalMap.offset.set(time * 0.012, time * 0.008);
 }
 
@@ -518,7 +519,7 @@ function newCustomer(seat) {
 }
 
 function patienceFor(key) {
-  return state.mode === 'practice' ? Infinity : 40 + INGREDIENTS[key].cookTime * 2.5;
+  return 40 + INGREDIENTS[key].cookTime * 2.5;
 }
 
 function showOrder(seat) {
@@ -542,7 +543,7 @@ function say(c, text, cls = '') {
 
 const _look = new THREE.Vector3();
 function updateCustomers(dt) {
-  const canSpawn = state.mode === 'shift' ? state.time > 8 : state.mode === 'practice';
+  const canSpawn = state.mode === 'shift' && state.time > 8;
   const bar = $('topbar').getBoundingClientRect();
   for (const seat of seats) {
     const c = seat.customer;
@@ -670,7 +671,7 @@ function currentQuality(rec) {
 }
 
 function addScore(pts) {
-  if (state.mode !== 'shift' && state.mode !== 'practice') return;
+  if (state.mode !== 'shift') return;
   state.score = Math.max(0, state.score + pts);
   $('score').textContent = state.score;
 }
@@ -737,7 +738,7 @@ function updateFrying(dt, time) {
 
     // 泡：水分が多いほど大きく激しい。抜けると細かく少なく
     const heat = clamp((T - 105) / 75, 0, 1.4);
-    const rate = (40 + 260 * Math.pow(it.moisture, 0.8)) * heat * it.radius;
+    const rate = (40 + 260 * Math.pow(it.moisture, 0.8)) * heat * it.radius * (LOW ? 0.45 : 1);
     let n = rate * dt;
     const p = it.group.position;
     const ry = it.group.rotation.y;
@@ -1087,7 +1088,8 @@ function frame() {
     updateHUD();
   }
   finish.uniforms.uTime.value = time;
-  composer.render();
+  // スマホなどでは後処理を通さず直接描画して軽くする
+  if (LOW) renderer.render(scene, camera); else composer.render();
 }
 
 $('loading').classList.add('hidden');

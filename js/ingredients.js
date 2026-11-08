@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { TessellateModifier } from 'three/addons/modifiers/TessellateModifier.js';
 import { batterBump, speckle } from './textures.js';
+import { LOW } from './quality.js';
 
 // ---------------------------------------------------------------
 // 揚げ物モデル（油温は店が適温に保っている。入れすぎたときだけ下がる）
@@ -114,7 +115,7 @@ function makeCoat(geo, thick, bump, seed, tinted = false, edge = 0.045) {
   let g = geo.clone();
   if (g.attributes.uv) g.deleteAttribute('uv');
   g = g.index ? g.toNonIndexed() : g;
-  g = new TessellateModifier(edge, 6).modify(g);
+  g = new TessellateModifier(LOW ? edge * 1.7 : edge, 6).modify(g);
   g.deleteAttribute('normal');
   if (g.attributes.uv) g.deleteAttribute('uv');
   g = mergeVertices(g, 1e-3);
