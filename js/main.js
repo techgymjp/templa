@@ -401,7 +401,6 @@ function addIngredient(key) {
   g.rotation.set(0, Math.random() * 6.283, 0);
   it.state = 'coating';
   hashiFollow = it; hashiOpenTarget = 0.02;
-  if (!state.firstAdd && state.mode !== 'demo') { state.firstAdd = true; $('hint').style.opacity = 0; }
   tween(0.4, k => g.position.lerpVectors(start, dip, k * k), () => {
     it.showBatter();
     it.updateLook();
@@ -879,11 +878,6 @@ function updateIngredientButtons() {
 }
 
 $('opt-bgm').checked = audio.bgmOn;
-$('btn-tutorial-reset').addEventListener('click', (e) => {
-  e.preventDefault();
-  store.set('tutorial', []);
-  e.target.textContent = '次の営業から、各具材の1回目にゲージを表示します';
-});
 $('opt-bgm').addEventListener('change', e => {
   audio.bgmOn = e.target.checked;
   store.set('bgm', audio.bgmOn);
@@ -891,15 +885,15 @@ $('opt-bgm').addEventListener('change', e => {
 });
 
 // ---------------------------------------------------------------
-// 揚げ加減ゲージ（各具材の1回目だけのチュートリアル）
+// 揚げ加減ゲージ（営業ごとに、各具材の1回目だけ）
 //   1面目：油に浸かった面の色づきで 0 → 0.5（0.5 が返しどき）
 //   2面目：返したあとに浸かった面の色づきで 0.5 → 1.0（1.0 付近が上げどき）
+//   営業のたびに、各具材の1回目で表示する
 // ---------------------------------------------------------------
-const tutorialSeen = () => store.get('tutorial', []);
-function markTutorialSeen(key) {
-  const seen = tutorialSeen();
-  if (!seen.includes(key)) store.set('tutorial', [...seen, key]);
-}
+// 営業ごとに「この営業で揚げた具材」を覚える（営業を始めるたびにリセット）
+let tutorialDone = new Set();
+const tutorialSeen = () => [...tutorialDone];
+function markTutorialSeen(key) { tutorialDone.add(key); }
 const FLIP_B = 0.78; // 返しどきの、1面目の色づき
 function gaugeOf(it) {
   if (!it.flipCount) return { p: 0.5 * it.brownB / FLIP_B, phase: 1 };
@@ -938,7 +932,7 @@ function updateLabels() {
     if (!el) { el = document.createElement('div'); el.className = 'lbl'; bubblesLayer.appendChild(el); labels.set(it, el); }
     el.classList.toggle('master', state.master);
     el.classList.toggle('tut', !!it.tutorial);
-    el.innerHTML = `${it.def.name}<span class="sec"> ${it.timeInOil.toFixed(0)}秒</span>${it.flipCount ? ' <span class="flip">↻</span>' : ''}`
+    el.innerHTML = `<span class="nm">${it.def.name}</span><span class="sec">${Math.floor(it.timeInOil)}<small>秒</small></span>${it.flipCount ? '<span class="flip">↻</span>' : ''}`
       + (it.tutorial ? gaugeHTML(it) : '');
     const p = toScreen(it.group.position.clone().add(new THREE.Vector3(0, 0.35, -it.radius * 0.5)));
     el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
@@ -1059,15 +1053,6 @@ function clearAll() {
 
 // 開始前の仕込み：効果音・BGM の音を作り、全具材の衣と描画を準備しておく（初回だけ）
 let ready = false;
-let hintTimer = 0;
-function showViewHint() {
-  const el = $('view-hint');
-  el.textContent = matchMedia('(pointer: coarse)').matches ? '2本指で拡大・縮小、ドラッグで視点を回せます' : 'ホイールで拡大・縮小、ドラッグで視点を回せます';
-  el.classList.add('on');
-  clearTimeout(hintTimer);
-  hintTimer = setTimeout(() => el.classList.remove('on'), 6000);
-}
-controls.addEventListener('start', () => { if (state.running) setTimeout(() => $('view-hint').classList.remove('on'), 1500); });
 async function prepareAll() {
   if (ready) return;
   const el = $('loading'), bar = $('loading-bar'), txt = $('loading-text');
@@ -1105,7 +1090,6 @@ async function startGame(mode) {
   audio.startBgm();
   // 鍋のアップ・少し斜めから始めて、視点を動かせることを伝える
   setView(0.56, 0.32, -0.08);
-  showViewHint();
   clearAll();
   state.mode = mode;
   state.master = $('opt-master').checked;
@@ -1113,7 +1097,7 @@ async function startGame(mode) {
   state.time = SHIFT_TIME; state.score = 0;
   state.temp = OIL_SET; state.pendingDrop = 0;
   state.stats = { fried: 0, served: 0, missed: 0, qualSum: 0, best: 0, perfect: 0 };
-  state.firstAdd = false; $('hint').style.opacity = 1;
+  tutorialDone = new Set(); // 営業のたびに、各具材の1回目でゲージを出す
   $('score').textContent = 0;
   seats[1].cooldown = 0.3;
   for (const id of ['title', 'result', 'pause']) $(id).classList.add('hidden');
