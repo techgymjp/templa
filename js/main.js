@@ -91,7 +91,7 @@ function resize() {
   // 鍋の手前のふちが「下の具材ボタン」より上に収まる構図を探す
   const anchorY = S.COUNTER_Y + 0.3 + 2.15;
   const minY = HUD_TOP + bubbleHeight() + 14;
-  const maxY = h - (w <= 640 ? 150 : 100); // スマホは具材ボタンが 2 行
+  const maxY = h - (w <= 640 ? 175 : 100); // スマホは具材ボタンが 2 行
   const potFront = new THREE.Vector3(S.POT.x, 0.6, S.POT.z + 3.3);
   const screenY = (v) => (-v.clone().project(camera).y * 0.5 + 0.5) * h;
   let f = f0, shift = 0;
