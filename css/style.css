@@ -225,3 +225,16 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 .speech.side.urgent::before { border-right-color: #fbe1da; border-top-color: transparent; }
 .speech.side.happy::before { border-right-color: #fff3c4; border-top-color: transparent; }
 .speech.side.angry::before { border-right-color: #f6d6cf; border-top-color: transparent; }
+
+/* 視点操作の案内 */
+#view-hint {
+  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
+  background: rgba(43, 29, 18, .82); color: #fff; font-weight: 700; font-size: 15px;
+  padding: 10px 16px; border-radius: 12px; pointer-events: none !important;
+  opacity: 0; transition: opacity .6s; text-align: center; max-width: 86%;
+}
+#view-hint.on { opacity: 1; }
+
+/* 遊び方へのリンク：大きなボタンの並びから離して置く（誤タップ防止） */
+.howto-link { text-align: center; margin: 14px 0 0; }
+.howto-link a { color: var(--accent); font-weight: 700; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; padding: 6px 10px; }

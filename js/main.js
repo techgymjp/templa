@@ -14,6 +14,19 @@ import { iconSVG } from './icons.js';
 import { LOW } from './quality.js';
 
 const $ = (id) => document.getElementById(id);
+// 画面（タイトル・一時停止・結果）を出した直後 0.5 秒以内に「触れた」タップは無視して、二度押しの誤タップを防ぐ。
+// 処理が遅れて届いても、指が触れた時刻（event.timeStamp）で判定する
+let overlayShownAt = -1e9;
+function showOverlay(id) {
+  $(id).classList.remove('hidden');
+  overlayShownAt = performance.now();
+}
+for (const type of ['pointerdown', 'pointerup', 'click', 'touchstart', 'touchend']) {
+  document.addEventListener(type, (e) => {
+    if (!e.target.closest || !e.target.closest('.overlay')) return;
+    if (e.timeStamp < overlayShownAt + 500) { e.preventDefault(); e.stopPropagation(); }
+  }, { capture: true, passive: false });
+}
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, k) => a + (b - a) * k;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -80,8 +93,19 @@ const viewInfo = {};
 const HUD_TOP = 52;
 function bubbleHeight() { return window.innerWidth <= 640 ? 76 : 84; }
 const BASE_FOV = 34;
+// 視点：fitDist = 全体が収まる距離。ズームで「鍋のアップ」〜「全体」を行き来する
+const POT_TARGET = new THREE.Vector3(S.POT.x, 0.2, S.POT.z);
+const ZOOM_MIN = 0.5, ZOOM_MAX = 1.15;
+let fitDist = 0;
+const viewDir = CAM_DIR.clone();
+let viewRatio = 1;
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
+  // 画面サイズが変わっても（スマホのアドレスバーの出入りなど）今のアングルを保つ
+  if (fitDist) {
+    viewDir.copy(camera.position).sub(controls.target).normalize();
+    viewRatio = camera.position.distanceTo(controls.target) / fitDist;
+  }
   renderer.setSize(w, h, false);
   if (!LOW) composer.setSize(w, h);
   if (gtao) gtao.setSize(w * renderer.getPixelRatio(), h * renderer.getPixelRatio());
@@ -114,9 +138,36 @@ function resize() {
   camera.aspect = w / H;
   camera.setViewOffset(w, H, 0, 0, w, h);
   camera.updateProjectionMatrix();
-  controls.minDistance = CAM_DIST * f * 0.7;
-  controls.maxDistance = CAM_DIST * f * 1.25;
+  fitDist = CAM_DIST * f;
+  controls.minDistance = fitDist * ZOOM_MIN;
+  controls.maxDistance = fitDist * ZOOM_MAX;
   viewInfo.shift = shift;
+  placeCamera();
+}
+// ズームの度合いに応じて注目点を「鍋」〜「カウンター全体」の間で動かす
+function zoomTarget(ratio, out) {
+  const k = THREE.MathUtils.smoothstep(ratio, ZOOM_MIN, 1);
+  return out.lerpVectors(POT_TARGET, CAM_TARGET, k);
+}
+function placeCamera() {
+  zoomTarget(viewRatio, controls.target);
+  camera.position.copy(controls.target).addScaledVector(viewDir, fitDist * viewRatio);
+  camera.lookAt(controls.target);
+}
+// 指定したアングルにする（ratio: 1 = 全体, 0.5 = 鍋のアップ, az: 横回転[rad], tilt: 見下ろし角の調整[rad]）
+function setView(ratio, az = 0, tilt = 0) {
+  const sph = new THREE.Spherical().setFromVector3(CAM_DIR);
+  sph.theta += az; sph.phi = THREE.MathUtils.clamp(sph.phi + tilt, controls.minPolarAngle, controls.maxPolarAngle);
+  viewDir.setFromSpherical(sph).normalize();
+  viewRatio = ratio;
+  placeCamera();
+}
+const _zt = new THREE.Vector3();
+function followZoom() {
+  const ratio = camera.position.distanceTo(controls.target) / fitDist;
+  zoomTarget(ratio, _zt);
+  const d = _zt.sub(controls.target);
+  if (d.lengthSq() > 1e-8) { controls.target.add(d); camera.position.add(d); }
 }
 window.addEventListener('resize', resize);
 resize();
@@ -946,6 +997,15 @@ function clearAll() {
 
 // 開始前の仕込み：効果音・BGM の音を作り、全具材の衣と描画を準備しておく（初回だけ）
 let ready = false;
+let hintTimer = 0;
+function showViewHint() {
+  const el = $('view-hint');
+  el.textContent = matchMedia('(pointer: coarse)').matches ? '2本指で拡大・縮小、ドラッグで視点を回せます' : 'ホイールで拡大・縮小、ドラッグで視点を回せます';
+  el.classList.add('on');
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => el.classList.remove('on'), 6000);
+}
+controls.addEventListener('start', () => { if (state.running) setTimeout(() => $('view-hint').classList.remove('on'), 1500); });
 async function prepareAll() {
   if (ready) return;
   const el = $('loading'), bar = $('loading-bar'), txt = $('loading-text');
@@ -981,6 +1041,9 @@ async function startGame(mode) {
   audio.init(); // タップの中で音声を開く
   try { await prepareAll(); } finally { starting = false; }
   audio.startBgm();
+  // 鍋のアップ・少し斜めから始めて、視点を動かせることを伝える
+  setView(0.56, 0.32, -0.08);
+  showViewHint();
   clearAll();
   state.mode = mode;
   state.master = $('opt-master').checked;
@@ -1016,7 +1079,7 @@ function endGame() {
     <tr><td>帰ってしまったお客さん</td><td>${st.missed} 人</td></tr>
     ${state.master ? '<tr><td>職人モード</td><td>×1.3</td></tr>' : ''}
   </table><div class="comment">${comment}</div>`;
-  $('result').classList.remove('hidden');
+  showOverlay('result');
   $('hud').classList.add('hidden');
   $('labels').classList.add('hidden');
   audio.update(0, 0, 0.1);
@@ -1024,16 +1087,17 @@ function endGame() {
 
 function toTitle() {
   clearAll();
+  setView(1, 0);
   state.mode = 'demo'; state.running = false; state.paused = false;
   state.temp = OIL_SET; state.stats = null;
   for (const id of ['result', 'pause', 'hud']) $(id).classList.add('hidden');
-  $('title').classList.remove('hidden');
+  showOverlay('title');
 }
 
 function setPaused(p) {
   if (!state.running) return;
   state.paused = p;
-  $('pause').classList.toggle('hidden', !p);
+  if (p) showOverlay('pause'); else $('pause').classList.add('hidden');
   if (p) audio.suspend(); else audio.resume();
 }
 
@@ -1090,6 +1154,7 @@ function frame() {
   if (!state.timeScale) adaptQuality(rawDt);
   const dt = Math.min(0.05, rawDt) * (state.timeScale || 1);
   controls.update();
+  followZoom();
   stMat.uniforms.pscale.value = renderer.domElement.height * 0.5;
   if (!state.paused) {
     time += dt;
@@ -1130,4 +1195,4 @@ $('loading').classList.add('hidden');
 frame();
 
 // デバッグ用
-window.__tempura = { audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
+window.__tempura = { setView, audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
