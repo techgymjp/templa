@@ -121,7 +121,12 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
   position: absolute; left: 0; right: 0; bottom: max(10px, env(safe-area-inset-bottom));
   display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 10px;
 }
-#ingredients { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+#ingredients {
+  display: flex; gap: 6px; flex-wrap: nowrap; justify-content: safe center; max-width: 100%;
+  overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none;
+}
+#ingredients::-webkit-scrollbar { display: none; }
+.ing { flex: 0 0 auto; }
 .ing {
   display: flex; flex-direction: column; align-items: center; min-width: 66px; padding: 3px 6px 4px;
 }
@@ -194,11 +199,18 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 .speech.urgent { background: #fbe1da; }
 .speech.urgent::before { border-top-color: #fbe1da; }
 .lbl .flip { color: #ffd88a; font-weight: 700; }
-#btn-bgm { padding: 4px 10px; border-radius: 999px; font-size: 13px; }
-#btn-bgm.off { opacity: .6; }
 #rack-hint {
   position: absolute; right: 8%; top: 46%; padding: 6px 12px; border-radius: 8px;
   background: rgba(43, 29, 18, .75); color: #fff; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
 }
 #rack-hint.on { opacity: 1; }
 #hint b { color: #ffd88a; }
+
+/* 狭い画面で上のバーにかかるときは頭の横に出す（しっぽは左向き） */
+.speech.side { transform: translate(0, -50%); margin-top: 0; margin-left: 6px; animation: none; }
+.speech.side::after { left: -12px; bottom: auto; top: 50%; transform: translateY(-50%); border: 8px solid transparent; border-right: 10px solid var(--ink); border-left: 0; }
+.speech.side::before { left: -8px; bottom: auto; top: 50%; transform: translateY(-50%); border: 6px solid transparent; border-right: 8px solid #fffdf6; border-left: 0; }
+.speech.side.urgent { animation: none; }
+.speech.side.urgent::before { border-right-color: #fbe1da; border-top-color: transparent; }
+.speech.side.happy::before { border-right-color: #fff3c4; border-top-color: transparent; }
+.speech.side.angry::before { border-right-color: #f6d6cf; border-top-color: transparent; }

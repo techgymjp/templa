@@ -75,21 +75,48 @@ const finish = new ShaderPass({
 });
 composer.addPass(finish);
 
+const viewInfo = {};
+// 上のバー（残り時間など）と吹き出しの高さ（px）。吹き出しが必ず頭の上に収まるよう構図を決める
+const HUD_TOP = 52;
+function bubbleHeight() { return window.innerWidth <= 640 ? 60 : 84; }
+const BASE_FOV = 34;
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false);
   composer.setSize(w, h);
   if (gtao) gtao.setSize(w * renderer.getPixelRatio(), h * renderer.getPixelRatio());
-  // 上の吹き出しの分だけ絵を下にずらす
-  const shift = Math.round(h * 0.06);
-  camera.aspect = w / (h + shift);
-  camera.setViewOffset(w, h + shift, 0, 0, w, h);
   const need = w < h ? 0.95 : 1.55; // 横に見せたい幅の比
-  const f = Math.max(1, need / (w / h));
-  camera.position.copy(CAM_TARGET).addScaledVector(CAM_DIR, CAM_DIST * f);
+  const f0 = Math.max(1, need / (w / h));
+  // 吹き出しの付け根（頭の上）が「上のバー＋吹き出し」より下に、
+  // 鍋の手前のふちが「下の具材ボタン」より上に収まる構図を探す
+  const anchorY = S.COUNTER_Y + 0.3 + 2.15;
+  const minY = HUD_TOP + bubbleHeight() + 14;
+  const maxY = h - (w <= 640 ? 92 : 100);
+  const potFront = new THREE.Vector3(S.POT.x, 0.6, S.POT.z + 3.3);
+  const screenY = (v) => (-v.clone().project(camera).y * 0.5 + 0.5) * h;
+  let f = f0, shift = 0;
+  for (let i = 0; i < 30; i++) {
+    camera.fov = BASE_FOV; camera.aspect = w / h; camera.clearViewOffset();
+    camera.position.copy(CAM_TARGET).addScaledVector(CAM_DIR, CAM_DIST * f);
+    camera.lookAt(CAM_TARGET);
+    camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    let top = Infinity;
+    for (const x of S.SEATS_X) top = Math.min(top, screenY(new THREE.Vector3(x, anchorY, S.CUSTOMER_Z)));
+    shift = Math.max(0, minY - top);
+    const bottom = screenY(potFront) + shift;
+    viewInfo.top = top + shift; viewInfo.bottom = bottom; viewInfo.f = f;
+    if (bottom <= maxY) break;
+    f *= 1.04;
+  }
+  // 大きさを変えずに絵を shift px 下げる（上下に広い仮想画面の上側を切り出す）
+  const H = h + 2 * shift;
+  camera.fov = 2 * THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(BASE_FOV / 2)) * H / h));
+  camera.aspect = w / H;
+  camera.setViewOffset(w, H, 0, 0, w, h);
+  camera.updateProjectionMatrix();
   controls.minDistance = CAM_DIST * f * 0.7;
   controls.maxDistance = CAM_DIST * f * 1.25;
-  camera.updateProjectionMatrix();
+  viewInfo.shift = shift;
 }
 window.addEventListener('resize', resize);
 resize();
@@ -359,9 +386,9 @@ function enterOil(it) {
   spawnTenkasu(p.x, p.z, Math.round(rand(6, 12)), it.radius * 1.1);
 }
 
+let potFullUntil = 0;
 function flashPotFull() {
-  const c = $('pot-chip');
-  c.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.25)', background: '#f3b0a0' }, { transform: 'scale(1)' }], { duration: 400 });
+  potFullUntil = performance.now() + 1800;
   audio.bad();
 }
 
@@ -572,13 +599,20 @@ function updateCustomers(dt) {
       }
     }
     const p = toScreen(new THREE.Vector3(g.position.x, g.position.y + 2.15, g.position.z));
-    // 上のバー（残り時間・BGM・一時停止）と重なるときは、バーの下まで吹き出しを下げる
+    // 吹き出しは頭の上。狭い画面で上のバーにかかるときだけ、顔を隠さないよう頭の横に出す
     const w = c.el.offsetWidth, h = c.el.offsetHeight;
-    const overlapX = p.x + w / 2 > bar.left - 6 && p.x - w / 2 < bar.right + 6;
-    const minY = bar.bottom + 8 + 10 + h; // 10 は吹き出しの margin-top 分
-    if (overlapX && p.y < minY) p.y = minY;
-    c.el.style.left = p.x + 'px';
-    c.el.style.top = p.y + 'px';
+    const overlap = p.x + w / 2 > bar.left - 6 && p.x - w / 2 < bar.right + 6 && p.y - 10 - h < bar.bottom + 6;
+    if (overlap) {
+      const head = toScreen(new THREE.Vector3(g.position.x, g.position.y + 1.55, g.position.z));
+      const side = toScreen(new THREE.Vector3(g.position.x + 0.62, g.position.y + 1.55, g.position.z));
+      c.el.classList.add('side');
+      c.el.style.left = side.x + 'px';
+      c.el.style.top = Math.max(head.y, bar.bottom + 8 + h / 2) + 'px';
+    } else {
+      c.el.classList.remove('side');
+      c.el.style.left = p.x + 'px';
+      c.el.style.top = p.y + 'px';
+    }
   }
 }
 
@@ -775,14 +809,12 @@ function updateIngredientButtons() {
   }
 }
 
-function updateBgmButton() {
-  $('btn-bgm').textContent = audio.bgmOn ? '♪ BGM' : '♪ off';
-  $('btn-bgm').classList.toggle('off', !audio.bgmOn);
-  $('opt-bgm').checked = audio.bgmOn;
-}
-$('btn-bgm').addEventListener('click', () => { audio.init(); audio.setBgm(!audio.bgmOn); store.set('bgm', audio.bgmOn); updateBgmButton(); });
-$('opt-bgm').addEventListener('change', e => { audio.bgmOn = e.target.checked; store.set('bgm', audio.bgmOn); updateBgmButton(); });
-updateBgmButton();
+$('opt-bgm').checked = audio.bgmOn;
+$('opt-bgm').addEventListener('change', e => {
+  audio.bgmOn = e.target.checked;
+  store.set('bgm', audio.bgmOn);
+  if (audio.ctx) audio.setBgm(audio.bgmOn);
+});
 
 const labels = new Map();
 function updateLabels() {
@@ -801,13 +833,13 @@ function updateLabels() {
 }
 
 function updateHUD() {
-  $('potcount').textContent = `${oilItems().length}/${MAX_IN_POT}`;
   if (state.mode === 'shift') {
     const t = Math.max(0, Math.ceil(state.time));
     $('time').textContent = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
   } else $('time').textContent = '∞';
   const w = $('warn');
-  const msg = state.temp < 155 && oilItems().length ? '入れすぎで油温が下がっている…ベチャッとなるぞ' : '';
+  const msg = performance.now() < potFullUntil ? '鍋がいっぱい。揚がったものから網に上げよう'
+    : state.temp < 155 && oilItems().length ? '入れすぎで油温が下がっている…ベチャッとなるぞ' : '';
   w.textContent = msg;
   w.classList.toggle('hidden', !msg);
 }
@@ -1062,4 +1094,4 @@ $('loading').classList.add('hidden');
 frame();
 
 // デバッグ用
-window.__tempura = { state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
+window.__tempura = { viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
