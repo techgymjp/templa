@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>てんぷら職人</title>
+  <meta name="description" content="油の温度と揚げ時間を見極めて、てんぷらをカラッと揚げる3Dゲーム" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div id="labels"></div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="topbar">
+      <div class="chip"><span class="k">残り</span><span id="time">2:30</span></div>
+      <div class="chip"><span class="k">売上</span><span id="score">0</span></div>
+      <div class="chip" id="pot-chip"><span class="k">鍋</span><span id="potcount">0/6</span></div>
+      <button id="btn-pause" class="ghost" title="一時停止">❚❚</button>
+    </div>
+
+    <div id="thermo">
+      <div class="thermo-label">油温</div>
+      <div class="thermo-tube">
+        <div class="zone z-high" title="高温 180℃〜"></div>
+        <div class="zone z-mid" title="中温 165〜180℃"></div>
+        <div class="zone z-low" title="低温 150〜165℃"></div>
+        <div id="thermo-fill"></div>
+        <div id="thermo-hidden">?</div>
+      </div>
+      <div id="temp-value">25℃</div>
+    </div>
+
+    <div id="warn" class="hidden"></div>
+
+    <div id="bottombar">
+      <div id="ingredients"></div>
+      <div id="controls">
+        <label class="heat">
+          <span class="k">火加減</span>
+          <input id="heat" type="range" min="0" max="10" step="0.5" value="7.5" />
+          <span id="heat-value">中火</span>
+        </label>
+        <button id="btn-drop" class="ghost" title="衣を一滴たらして油温を見る">衣を一滴</button>
+        <button id="btn-skim" class="ghost" title="油に散った天かすをすくう">天かす</button>
+      </div>
+    </div>
+    <div id="hint">お客さんの吹き出しの具材を選ぶ → 衣をつけて鍋へ。揚がったと思ったら鍋の天ぷらをタップして引き上げる。</div>
+  </div>
+
+  <!-- 評価ポップアップ -->
+  <div id="toasts"></div>
+
+  <!-- タイトル -->
+  <div id="title" class="overlay">
+    <div class="card">
+      <h1>てんぷら職人</h1>
+      <p class="sub">油の音を聴き、泡を見て、カラッと揚げろ。</p>
+      <div class="how">
+        <div><b>1.</b> カウンターのお客さんが吹き出しで注文します。下の具材を選ぶと、衣をくぐらせて鍋へ。</div>
+        <div><b>2.</b> 具材ごとに<em>適温</em>があります。火加減で油温を合わせましょう。入れすぎると油温が下がります。</div>
+        <div><b>3.</b> 泡が細かくなり、音が「チリチリ」と高くなったら揚げ頃。鍋の天ぷらをタップして引き上げます。</div>
+        <div><b>4.</b> 揚がった天ぷらは網で油を切り、注文したお客さんへ。低温だとベチャッと、高温だと焦げて中が生。きつね色なら高得点。</div>
+        <div><b>ヒント</b> 「衣を一滴」で油温がわかります：底まで沈む＝低温／途中で浮く＝中温／表面で散る＝高温。</div>
+      </div>
+      <div class="modes">
+        <button class="primary" data-mode="shift">営業開始（2分30秒）</button>
+        <button data-mode="practice">練習（時間無制限）</button>
+      </div>
+      <label class="check"><input type="checkbox" id="opt-master" /> 職人モード：温度計と揚げ時間を隠す（得点 ×1.3）</label>
+      <p class="tiny">音が出ます。ドラッグで視点を少し回せます。</p>
+    </div>
+  </div>
+
+  <div id="pause" class="overlay hidden">
+    <div class="card small">
+      <h2>一時停止</h2>
+      <div class="modes">
+        <button class="primary" id="btn-resume">再開</button>
+        <button id="btn-quit">タイトルへ</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="result" class="overlay hidden">
+    <div class="card">
+      <h2>本日の営業終了</h2>
+      <div id="rank"></div>
+      <div id="result-body"></div>
+      <div class="modes">
+        <button class="primary" data-mode="shift">もう一度</button>
+        <button id="btn-title">タイトルへ</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading" class="overlay"><div class="spinner"></div></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
