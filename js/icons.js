@@ -53,10 +53,17 @@ const ICONS = {
     <circle cx="12" cy="30" r="2" fill="#1b130c"/>
     <path d="M22 22 q10 -4 18 0" fill="none" stroke="#9aa3a0" stroke-width="1.6"/>`,
   nasu: `
-    <path d="M14 40 q-4 -18 14 -24 q18 -6 26 8 q8 16 -8 24 q-24 10 -32 -8z" fill="#4a1d48" ${L}/>
-    <path d="M18 39 q-2 -13 12 -18 q14 -4 20 7 q5 12 -7 18 q-19 7 -25 -7z" fill="#efe4bf"/>
-    <path d="M26 30 l14 12 M24 36 l12 9 M30 25 l14 12" stroke="#d9cc9e" stroke-width="1.8"/>
-    <path d="M44 12 q6 -2 10 2 q-4 2 -6 8 q-4 -2 -6 -4z" fill="#5f7a2e" ${L}/>`,
+    <defs>
+      <linearGradient id="nb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a3a86"/><stop offset="0.5" stop-color="#4a1d58"/><stop offset="1" stop-color="#22091f"/></linearGradient>
+      <linearGradient id="ng" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fa042"/><stop offset="1" stop-color="#3f5e22"/></linearGradient>
+    </defs>
+    <ellipse cx="30" cy="57" rx="22" ry="3.5" fill="#000" opacity="0.1"/>
+    <path d="M42 15 C35 15 29 19 24 26 C18 34 11 41 10 48 C9 55 15 59 22 57 C30 55 36 48 41 40 C45 33 49 27 49 22 C49 18 46 15 42 15z" fill="url(#nb)" stroke="#2a1426" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M27 29 C22 36 17 41 15 47" fill="none" stroke="#c9a6d4" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+    <path d="M30 25.5 C29.3 26.3 28.6 27.1 28 28" fill="none" stroke="#f1e2f4" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+    <path d="M38 16 L34 21 L40 19.5 L39.5 26 L43.5 20.5 L47.5 25.5 L47 19 L52 19.5 L48.5 14.5 C46 10.5 41 11.5 38 16z" fill="url(#ng)" stroke="#2c3d16" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M47 12.5 C49 9 52 7 56 6.5" fill="none" stroke="#2c3d16" stroke-width="5" stroke-linecap="round"/>
+    <path d="M47 12.5 C49 9 52 7 56 6.5" fill="none" stroke="#6d8a3a" stroke-width="3" stroke-linecap="round"/>`,
   shishito: `
     <path d="M10 40 q4 -12 20 -14 q16 -2 24 -8 q2 8 -8 16 q-14 10 -36 6z" fill="#4a9a34" ${L}/>
     <path d="M18 36 q10 -6 26 -10" fill="none" stroke="#7cc45e" stroke-width="2.5" stroke-linecap="round"/>
