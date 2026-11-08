@@ -64,6 +64,10 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 .tiny { font-size: 12px; text-align: center; color: #8a6a50; margin: 10px 0 0; }
 
 #loading { background: #1a120c; z-index: 30; }
+.loading-box { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--paper); }
+#loading-text { font-family: var(--font-title); font-size: 20px; letter-spacing: .08em; }
+.loading-track { width: 200px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .15); overflow: hidden; }
+#loading-bar { width: 0; height: 100%; background: var(--gold); transition: width .15s; }
 .spinner { width: 40px; height: 40px; border: 4px solid #6b4426; border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 

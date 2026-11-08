@@ -944,8 +944,42 @@ function clearAll() {
   press = null;
 }
 
-function startGame(mode) {
-  audio.init();
+// 開始前の仕込み：効果音・BGM の音を作り、全具材の衣と描画を準備しておく（初回だけ）
+let ready = false;
+async function prepareAll() {
+  if (ready) return;
+  const el = $('loading'), bar = $('loading-bar'), txt = $('loading-text');
+  el.classList.remove('hidden');
+  const set = (k, msg) => { bar.style.width = Math.round(k * 100) + '%'; txt.textContent = msg; };
+  set(0, '仕込み中…（音）');
+  await audio.prepare(k => set(k * 0.5, '仕込み中…（音）'));
+  const tmp = [];
+  for (let i = 0; i < INGREDIENT_KEYS.length; i++) {
+    const key = INGREDIENT_KEYS[i];
+    for (const seed of [0, 1]) {
+      const it = new Tempura(key, seed);
+      it.showBatter();
+      it.group.position.set(0, -6, 0); // 画面外で描画の準備だけする
+      scene.add(it.group);
+      tmp.push(it);
+    }
+    set(0.5 + (i + 1) / INGREDIENT_KEYS.length * 0.45, `仕込み中…（${INGREDIENTS[key].name}）`);
+    await new Promise(r => setTimeout(r, 0));
+  }
+  renderer.compile(scene, camera);
+  for (const it of tmp) { scene.remove(it.group); it.dispose(); }
+  set(1, '仕込み完了');
+  await new Promise(r => setTimeout(r, 150));
+  el.classList.add('hidden');
+  ready = true;
+}
+
+let starting = false;
+async function startGame(mode) {
+  if (starting) return;
+  starting = true;
+  audio.init(); // タップの中で音声を開く
+  try { await prepareAll(); } finally { starting = false; }
   audio.startBgm();
   clearAll();
   state.mode = mode;
@@ -1096,4 +1130,4 @@ $('loading').classList.add('hidden');
 frame();
 
 // デバッグ用
-window.__tempura = { viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
+window.__tempura = { audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };

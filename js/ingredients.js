@@ -437,7 +437,7 @@ function coatMaterial(uTop, uBottom) {
 }
 
 export class Tempura {
-  constructor(key) {
+  constructor(key, seed) {
     this.def = INGREDIENTS[key];
     this.key = key;
     this.cook = 0;
@@ -449,7 +449,7 @@ export class Tempura {
     this.timeInOil = 0;
     this.sheen = 1; // 揚げたての油のつや
     this.state = 'raw'; // raw → coating → flying → oil (held) → lifted → served
-    this.seed = Math.floor(Math.random() * 1000);
+    this.seed = seed ?? Math.floor(Math.random() * 1000);
 
     const b = BUILDERS[key]();
     this.group = new THREE.Group();
