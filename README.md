@@ -37,7 +37,12 @@ ES Modules を使うので、ローカルの HTTP サーバーで開いてくだ
 python3 -m http.server 8000
 ```
 
-ブラウザで http://localhost:8000 を開きます。GitHub Pages などの静的ホスティングにそのまま置けます。
+ブラウザで http://localhost:8000 を開きます。
+
+## 公開
+
+`main` ブランチに push すると、GitHub Actions（`.github/workflows/pages.yml`）が GitHub Pages へ自動で公開します。
+公開先: https://techgymjp.github.io/templa/
 
 ## ファイル構成
 

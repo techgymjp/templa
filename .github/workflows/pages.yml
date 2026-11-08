@@ -2,7 +2,7 @@ name: GitHub Pages へ公開
 
 on:
   push:
-    branches: ["claude/relaxed-bardeen-deejab", "main"]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -16,6 +16,8 @@ concurrency:
 
 jobs:
   deploy:
+    # 手動実行でも main 以外からは公開しない
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
