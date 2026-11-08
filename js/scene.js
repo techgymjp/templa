@@ -312,20 +312,33 @@ function buildPlace(scene, x) {
   sheet.position.y = 0.1;
   sheet.receiveShadow = true;
   g.add(sheet);
-  // 天つゆ
-  const tsuyuBowl = new THREE.Mesh(new THREE.LatheGeometry([[0.001, 0], [0.32, 0], [0.45, 0.3], [0.48, 0.38], [0.42, 0.36], [0.001, 0.08]].map(([r, y]) => new THREE.Vector2(r, y)), 32),
-    new THREE.MeshStandardMaterial({ map: TX.glaze(), roughness: 0.25 }));
+  // 天つゆ（大根おろしとおろし生姜を添えて）
+  const tsuyuBowl = new THREE.Mesh(new THREE.LatheGeometry([[0.001, 0], [0.32, 0], [0.45, 0.3], [0.48, 0.38], [0.44, 0.38], [0.41, 0.3], [0.3, 0.09], [0.001, 0.08]].map(([r, y]) => new THREE.Vector2(r, y)), 40),
+    new THREE.MeshPhysicalMaterial({ color: '#efe9de', roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.1 }));
   tsuyuBowl.position.set(1.55, 0, 0.35);
   tsuyuBowl.castShadow = true;
-  const tsuyu = new THREE.Mesh(new THREE.CircleGeometry(0.4, 24), new THREE.MeshStandardMaterial({ color: '#3a1d08', roughness: 0.05, metalness: 0.2 }));
-  tsuyu.rotation.x = -Math.PI / 2; tsuyu.position.set(1.55, 0.3, 0.35);
-  const daikon = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8), new THREE.MeshStandardMaterial({ color: '#f3f0e6', roughness: 0.9 }));
-  daikon.scale.y = 0.6; daikon.position.set(1.6, 0.34, 0.3);
-  // 塩
-  const salt = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.1, 20), new THREE.MeshStandardMaterial({ color: '#ece6da', roughness: 0.3 }));
-  salt.position.set(-1.45, 0.05, 0.4);
-  const saltPile = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 6), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 }));
-  saltPile.scale.y = 0.5; saltPile.position.set(-1.45, 0.12, 0.4);
+  const tsuyu = new THREE.Mesh(new THREE.CircleGeometry(0.4, 32), new THREE.MeshPhysicalMaterial({
+    color: '#8a4614', roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0.02, transparent: true, opacity: 0.88,
+  }));
+  tsuyu.rotation.x = -Math.PI / 2; tsuyu.position.set(1.55, 0.27, 0.35);
+  const oroshiGeo = new THREE.SphereGeometry(0.15, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+  { // ざらっとした小山
+    const q = oroshiGeo.attributes.position;
+    for (let i = 0; i < q.count; i++) {
+      const k = 1 + (Math.random() - 0.5) * 0.25;
+      q.setXYZ(i, q.getX(i) * k, q.getY(i) * (0.75 + Math.random() * 0.2), q.getZ(i) * k);
+    }
+    oroshiGeo.computeVertexNormals();
+  }
+  const daikon = new THREE.Mesh(oroshiGeo, new THREE.MeshStandardMaterial({ color: '#f4f1e8', roughness: 0.95 }));
+  daikon.position.set(1.62, 0.27, 0.3);
+  const ginger = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#e2bd5c', roughness: 0.8 }));
+  ginger.position.set(1.66, 0.37, 0.3);
+  // 塩（小皿に小さく盛る）
+  const salt = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.18, 0.08, 24), new THREE.MeshStandardMaterial({ map: TX.glaze(), roughness: 0.3 }));
+  salt.position.set(-1.45, 0.04, 0.4);
+  const saltPile = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.1, 14), new THREE.MeshStandardMaterial({ color: '#fbfaf6', roughness: 1 }));
+  saltPile.position.set(-1.45, 0.13, 0.4);
   // 箸と箸置き
   const hashiMat = new THREE.MeshStandardMaterial({ color: '#f1e2c2', roughness: 0.6 });
   for (const dz of [0.92, 1.02]) {
@@ -333,7 +346,7 @@ function buildPlace(scene, x) {
     h.rotation.z = Math.PI / 2; h.position.set(0, 0.1, dz);
     h.castShadow = true; g.add(h);
   }
-  g.add(tsuyuBowl, tsuyu, daikon, salt, saltPile);
+  g.add(tsuyuBowl, tsuyu, daikon, ginger, salt, saltPile);
   g.position.set(x, COUNTER_Y, PLATE_Z);
   scene.add(g);
   return { x, group: g, platePos: new THREE.Vector3(x, COUNTER_Y + 0.2, PLATE_Z), customer: null, cooldown: 1 + Math.random() * 3 };

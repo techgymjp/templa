@@ -516,6 +516,7 @@ function say(c, text, cls = '') {
 const _look = new THREE.Vector3();
 function updateCustomers(dt) {
   const canSpawn = state.mode === 'shift' ? state.time > 8 : state.mode === 'practice';
+  const bar = $('topbar').getBoundingClientRect();
   for (const seat of seats) {
     const c = seat.customer;
     if (!c) {
@@ -571,6 +572,11 @@ function updateCustomers(dt) {
       }
     }
     const p = toScreen(new THREE.Vector3(g.position.x, g.position.y + 2.15, g.position.z));
+    // 上のバー（残り時間・BGM・一時停止）と重なるときは、バーの下まで吹き出しを下げる
+    const w = c.el.offsetWidth, h = c.el.offsetHeight;
+    const overlapX = p.x + w / 2 > bar.left - 6 && p.x - w / 2 < bar.right + 6;
+    const minY = bar.bottom + 8 + 10 + h; // 10 は吹き出しの margin-top 分
+    if (overlapX && p.y < minY) p.y = minY;
     c.el.style.left = p.x + 'px';
     c.el.style.top = p.y + 'px';
   }
