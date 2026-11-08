@@ -161,8 +161,6 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 .lbl .sec { font-size: 22px; font-weight: 700; line-height: 1; color: #ffe7a6; font-variant-numeric: tabular-nums; }
 .lbl .sec small { font-size: 12px; margin-left: 1px; }
 .lbl .flip { font-size: 16px; }
-.lbl.tut { flex-direction: row; }
-.lbl.tut .gauge, .lbl.tut .g-tip { flex-basis: 100%; }
 
 /* evaluation toasts */
 #toasts { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
@@ -218,11 +216,6 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 .speech.urgent { background: #fbe1da; }
 .speech.urgent::before { border-top-color: #fbe1da; }
 .lbl .flip { color: #ffd88a; font-weight: 700; }
-#rack-hint {
-  position: absolute; right: 8%; top: 46%; padding: 6px 12px; border-radius: 8px;
-  background: rgba(43, 29, 18, .75); color: #fff; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
-}
-#rack-hint.on { opacity: 1; }
 #hint b { color: #ffd88a; }
 
 /* 狭い画面で上のバーにかかるときは頭の横に出す（しっぽは左向き） */
@@ -239,18 +232,49 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 .howto-link { text-align: center; margin: 14px 0 0; }
 .howto-link a { color: var(--accent); font-weight: 700; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; padding: 6px 10px; }
 
-/* 揚げ加減ゲージ（各具材の1回目だけ） */
-.lbl.tut { padding: 4px 8px 6px; border-radius: 8px; background: rgba(43, 29, 18, .86); text-align: center; z-index: 2; }
-.gauge { position: relative; width: 132px; height: 12px; margin: 16px auto 4px; border-radius: 6px; background: rgba(255, 255, 255, .18); }
-.g-zone { position: absolute; top: 0; bottom: 0; border-radius: 6px; }
-.g-zone.flip { background: rgba(255, 216, 138, .55); }
-.g-zone.done { left: 0; background: rgba(255, 255, 255, .08); }
-.g-zone.lift { background: rgba(120, 200, 110, .6); }
-.g-fill { position: absolute; left: 0; top: 2px; bottom: 2px; border-radius: 4px; background: linear-gradient(90deg, #f3e2ad, #dca14a 70%, #b8722a); transition: width .1s linear; }
-.g-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: #fff; }
-.g-mark span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-size: 10px; white-space: nowrap; color: #ffe7b0; }
-.g-tip { font-size: 12px; font-weight: 700; color: #fff; }
-.g-tip.now { color: #9cf08c; animation: blink .8s infinite; }
-.g-tip.warn { color: #ff9b85; }
-.gauge.now { box-shadow: 0 0 0 2px #9cf08c; }
-.gauge.warn { box-shadow: 0 0 0 2px #ff9b85; }
+/* 揚げ時間ガイド（各具材の1回目だけ）：画面の左端に縦に並べる */
+#guide {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 8px; width: 210px; pointer-events: none !important;
+}
+.g-card {
+  background: rgba(43, 29, 18, .88); color: #fff; border-radius: 12px; padding: 6px 10px 8px;
+  border: 2px solid transparent;
+}
+.g-card.now { border-color: #9cf08c; }
+.g-card.warn { border-color: #ff9b85; }
+.g-head { display: flex; align-items: center; gap: 6px; }
+.g-head svg { flex: 0 0 auto; }
+.g-name { font-family: var(--font-title); font-size: 17px; flex: 1; }
+.g-sec { font-size: 24px; font-weight: 700; color: #ffe7a6; font-variant-numeric: tabular-nums; line-height: 1; }
+.g-sec small { font-size: 12px; margin-left: 1px; }
+.g-bar { position: relative; height: 10px; margin: 22px 2px 4px; border-radius: 5px; background: rgba(255, 255, 255, .18); }
+.g-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: linear-gradient(90deg, #f3e2ad, #dca14a 70%, #b8722a); }
+.g-tick { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1.5px; border-radius: 2px; }
+.g-tick.flip { background: #ffd88a; }
+.g-tick.lift { background: #9cf08c; }
+.g-tick span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 2px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.g-tick.flip span { color: #ffd88a; }
+.g-tick.lift span { color: #9cf08c; }
+.g-tip { font-size: 13px; font-weight: 700; text-align: center; }
+.g-card.now .g-tip { color: #9cf08c; animation: blink .8s infinite; }
+.g-card.warn .g-tip { color: #ff9b85; }
+.g-tick span.s { display: none; }
+@media (max-width: 640px) {
+  /* スマホ：具材ボタンのすぐ上に、横並びの小さなカード */
+  #guide {
+    left: 6px; right: 6px; width: auto; top: auto; bottom: var(--guide-bottom, 190px); transform: none;
+    flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 5px;
+  }
+  .g-card { flex: 0 1 calc(33.3% - 4px); min-width: 0; padding: 4px 6px 5px; border-radius: 10px; }
+  .g-head { gap: 4px; }
+  .g-head svg { width: 22px; height: 22px; }
+  .g-name { font-size: 12px; white-space: nowrap; overflow: hidden; }
+  .g-sec { font-size: 18px; }
+  .g-sec small { font-size: 10px; }
+  .g-bar { height: 8px; margin: 14px 1px 3px; }
+  .g-tick span.l { display: none; }
+  .g-tick span.s { display: block; font-size: 10px; }
+  .g-tip { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+}

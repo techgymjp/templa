@@ -390,7 +390,7 @@ function addIngredient(key) {
   state.busy = true;
   updateIngredientButtons();
   const it = new Tempura(key);
-  // その具材を初めて揚げるときだけ、揚げ加減ゲージを出す（職人モードとデモでは出さない）
+  // 営業ごとに、その具材を初めて揚げるときだけ揚げ時間ガイドを出す（職人モードとデモでは出さない）
   it.tutorial = state.mode === 'shift' && !state.master && !tutorialSeen().includes(key);
   state.items.push(it);
   scene.add(it.group);
@@ -467,7 +467,6 @@ function flipItem(it) {
     it.flipper.position.y = 0;
     it.flipped = !it.flipped;
     it.flipCount = (it.flipCount || 0) + 1;
-    if (it.flipCount === 1) it.flipA0 = it.flipped ? it.brownA : it.brownB;
     it.flipping = false;
     if (hashiFollow === it) { hashiFollow = null; hashiOpenTarget = 0.12; }
     splashAt(it.group.position, it.radius, 0.35);
@@ -885,7 +884,7 @@ $('opt-bgm').addEventListener('change', e => {
 });
 
 // ---------------------------------------------------------------
-// 揚げ加減ゲージ（営業ごとに、各具材の1回目だけ）
+// 揚げ時間ガイド（営業ごとに、各具材の1回目だけ）
 //   1面目：油に浸かった面の色づきで 0 → 0.5（0.5 が返しどき）
 //   2面目：返したあとに浸かった面の色づきで 0.5 → 1.0（1.0 付近が上げどき）
 //   営業のたびに、各具材の1回目で表示する
@@ -894,32 +893,50 @@ $('opt-bgm').addEventListener('change', e => {
 let tutorialDone = new Set();
 const tutorialSeen = () => [...tutorialDone];
 function markTutorialSeen(key) { tutorialDone.add(key); }
-const FLIP_B = 0.78; // 返しどきの、1面目の色づき
-function gaugeOf(it) {
-  if (!it.flipCount) return { p: 0.5 * it.brownB / FLIP_B, phase: 1 };
-  const down = it.flipped ? it.brownA : it.brownB;
-  const a0 = it.flipA0 ?? 0;
-  return { p: 0.5 + 0.5 * Math.max(0, (down - a0) / Math.max(0.2, 1 - a0)), phase: 2 };
+// 画面の左端に出す「揚げ時間ガイド」：何秒で返して、何秒で上げるかを覚えるためのもの
+const guideBox = $('guide');
+const guideCards = new Map();
+function guideTip(it) {
+  const t = it.timeInOil, { flip, lift } = it.def;
+  if (!it.flipCount) {
+    if (t < flip - 0.5) return { text: `あと${Math.ceil(flip - t)}秒で返す`, cls: '' };
+    if (t <= flip + 1.5) return { text: '今だ！タップで返す', cls: 'now' };
+    return { text: '返して！焦げはじめます', cls: 'warn' };
+  }
+  if (t < lift - 0.5) return { text: `あと${Math.ceil(lift - t)}秒で上げる`, cls: '' };
+  if (t <= lift + 2) return { text: '上げどき！網へドラッグ', cls: 'now' };
+  return { text: '揚げすぎ！早く上げて', cls: 'warn' };
 }
-function gaugeHTML(it) {
-  const { p, phase } = gaugeOf(it);
-  const pct = (x) => Math.min(100, x / 1.3 * 100).toFixed(1) + '%';
-  let tip, cls = '';
-  if (phase === 1) {
-    if (p < 0.42) tip = '1面目を揚げています…';
-    else if (p <= 0.62) { tip = '今だ！タップで返す'; cls = 'now'; }
-    else { tip = '返して！焦げはじめます'; cls = 'warn'; }
-  } else if (p < 0.9) tip = '2面目を揚げています…';
-  else if (it.cook < 0.95) tip = 'もう少し…中まで火を通す';
-  else if (p <= 1.15) { tip = '上げどき！網へドラッグ'; cls = 'now'; }
-  else { tip = '揚げすぎ！早く上げて'; cls = 'warn'; }
-  return `<div class="gauge ${cls}">
-      <div class="g-zone ${phase === 1 ? 'flip' : 'done'}" style="left:${phase === 1 ? pct(0.42) : pct(0.5)};width:${phase === 1 ? 'calc(' + pct(0.62) + ' - ' + pct(0.42) + ')' : 'calc(' + pct(0.5) + ')'}"></div>
-      <div class="g-zone lift" style="left:${pct(0.9)};width:calc(${pct(1.15)} - ${pct(0.9)})"></div>
-      <div class="g-fill" style="width:${pct(p)}"></div>
-      <div class="g-mark" style="left:${pct(0.5)}"><span>返す</span></div>
-      <div class="g-mark" style="left:${pct(0.9)}"><span>上げる</span></div>
-    </div><div class="g-tip ${cls}">${tip}</div>`;
+function updateGuide() {
+  // スマホでは具材ボタンのすぐ上に出す
+  const bb = $('bottombar').getBoundingClientRect();
+  guideBox.style.setProperty('--guide-bottom', Math.round(window.innerHeight - bb.top + 8) + 'px');
+  const live = new Set();
+  for (const it of state.items) {
+    if (!it.tutorial || (it.state !== 'oil' && it.state !== 'held') || state.mode === 'demo') continue;
+    live.add(it);
+    let el = guideCards.get(it);
+    const { flip, lift } = it.def;
+    const max = lift + 4;
+    const pct = (x) => Math.min(100, x / max * 100).toFixed(1) + '%';
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'g-card';
+      el.innerHTML = `<div class="g-head">${iconSVG(it.key, 30)}<span class="g-name">${it.def.name}</span><span class="g-sec"></span></div>
+        <div class="g-bar"><div class="g-fill"></div>
+          <div class="g-tick flip" style="left:${pct(flip)}"><span class="l">${flip}秒 返す</span><span class="s">${flip}</span></div>
+          <div class="g-tick lift" style="left:${pct(lift)}"><span class="l">${lift}秒 上げる</span><span class="s">${lift}</span></div></div>
+        <div class="g-tip"></div>`;
+      guideBox.appendChild(el);
+      guideCards.set(it, el);
+    }
+    const tip = guideTip(it);
+    el.className = 'g-card ' + tip.cls;
+    el.querySelector('.g-sec').innerHTML = `${Math.floor(it.timeInOil)}<small>秒</small>`;
+    el.querySelector('.g-fill').style.width = pct(it.timeInOil);
+    el.querySelector('.g-tip').textContent = tip.text;
+  }
+  for (const [it, el] of guideCards) if (!live.has(it)) { el.remove(); guideCards.delete(it); }
 }
 
 const labels = new Map();
@@ -931,9 +948,7 @@ function updateLabels() {
     let el = labels.get(it);
     if (!el) { el = document.createElement('div'); el.className = 'lbl'; bubblesLayer.appendChild(el); labels.set(it, el); }
     el.classList.toggle('master', state.master);
-    el.classList.toggle('tut', !!it.tutorial);
-    el.innerHTML = `<span class="nm">${it.def.name}</span><span class="sec">${Math.floor(it.timeInOil)}<small>秒</small></span>${it.flipCount ? '<span class="flip">↻</span>' : ''}`
-      + (it.tutorial ? gaugeHTML(it) : '');
+    el.innerHTML = `<span class="nm">${it.def.name}</span><span class="sec">${Math.floor(it.timeInOil)}<small>秒</small></span>${it.flipCount ? '<span class="flip">↻</span>' : ''}`;
     const p = toScreen(it.group.position.clone().add(new THREE.Vector3(0, 0.35, -it.radius * 0.5)));
     el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
   }
@@ -1001,7 +1016,6 @@ window.addEventListener('pointermove', e => {
       const p = new THREE.Vector3();
       if (ray.ray.intersectPlane(holdPlane, p)) it.group.position.lerp(p, 0.6);
       if (Math.random() < 0.4) spawnDrip(it.group.position);
-      $('rack-hint').classList.toggle('on', overRack(it.group.position));
     }
     return;
   }
@@ -1014,7 +1028,6 @@ window.addEventListener('pointerup', () => {
   if (!press) return;
   const { item: it, dragging } = press;
   press = null;
-  $('rack-hint').classList.remove('on');
   if (!dragging) { flipItem(it); return; }
   const p = it.group.position;
   const inPot = Math.hypot(p.x - S.POT.x, p.z - S.POT.z) < S.POT.R - 0.2;
@@ -1047,6 +1060,8 @@ function clearAll() {
   }
   for (const [, el] of labels) el.remove();
   labels.clear();
+  for (const [, el] of guideCards) el.remove();
+  guideCards.clear();
   state.busy = false;
   press = null;
 }
@@ -1224,6 +1239,7 @@ function simStep(dt) {
   }
   if (state.mode === 'demo') updateRack(dt);
   if (!state.sim) updateLabels();
+  if (!state.sim) updateGuide();
   if (!state.sim) updateHUD();
 }
 

@@ -12,17 +12,18 @@ import { LOW } from './quality.js';
 //     油に浸かっている面は速く、上の面はゆっくり色づく → 途中で返すと均一になる
 //   grease: 油温が下がった状態で揚げると増える（ベチャッ）
 // ---------------------------------------------------------------
+// flip / lift：理想の「返す秒数」「上げる秒数」（入れてからの経過秒。遊び方ページとガイドで使う）
 const DEFS = {
-  hotate:   { name: 'ほたて',   cookTime: 8, radius: 0.5 },
-  kaki:     { name: '牡蠣',     cookTime: 9, radius: 0.6 },
-  anago:    { name: '穴子',     cookTime: 14, radius: 1.15 },
-  ebi:      { name: 'えび',     cookTime: 11, radius: 0.95 },
-  kisu:     { name: 'きす',     cookTime: 9, radius: 0.9 },
-  nasu:     { name: 'なす',     cookTime: 12, radius: 0.85 },
-  shishito: { name: 'ししとう', cookTime: 6, radius: 0.55 },
-  renkon:   { name: 'れんこん', cookTime: 14, radius: 0.65 },
-  maitake:  { name: 'まいたけ', cookTime: 8, radius: 0.65 },
-  kakiage:  { name: 'かき揚げ', cookTime: 18, radius: 0.8 },
+  hotate:   { name: 'ほたて',   cookTime: 8, radius: 0.5, flip: 5, lift: 10 },
+  kaki:     { name: '牡蠣',     cookTime: 9, radius: 0.6, flip: 6, lift: 11 },
+  anago:    { name: '穴子',     cookTime: 14, radius: 1.15, flip: 11, lift: 19 },
+  ebi:      { name: 'えび',     cookTime: 11, radius: 0.95, flip: 8, lift: 15 },
+  kisu:     { name: 'きす',     cookTime: 9, radius: 0.9, flip: 6, lift: 12 },
+  nasu:     { name: 'なす',     cookTime: 12, radius: 0.85, flip: 8, lift: 16 },
+  shishito: { name: 'ししとう', cookTime: 6, radius: 0.55, flip: 4, lift: 7 },
+  renkon:   { name: 'れんこん', cookTime: 14, radius: 0.65, flip: 10, lift: 18 },
+  maitake:  { name: 'まいたけ', cookTime: 8, radius: 0.65, flip: 5, lift: 10 },
+  kakiage:  { name: 'かき揚げ', cookTime: 18, radius: 0.8, flip: 13, lift: 23 },
 };
 
 for (const [key, d] of Object.entries(DEFS)) d.key = key;
