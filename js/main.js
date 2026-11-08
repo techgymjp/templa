@@ -97,7 +97,11 @@ const HUD_TOP = 52;
 function bubbleHeight() { return window.innerWidth <= 640 ? 76 : 84; }
 const BASE_FOV = 34;
 // 視点：fitDist = 全体が収まる距離。ズームで「鍋のアップ」〜「全体」を行き来する
-const POT_TARGET = new THREE.Vector3(S.POT.x, 0.2, S.POT.z);
+// スマホは下に具材ボタンとガイドがあるので、注目点を手前にずらして鍋を画面の上寄りに置く
+// （スマホは網も入るよう、注目点を少し右＝網の側にもずらす）
+const POT_TARGET = window.innerWidth <= 640
+  ? new THREE.Vector3(S.POT.x + 1.1, 0.2, S.POT.z + 1.8)
+  : new THREE.Vector3(S.POT.x, 0.2, S.POT.z);
 const ZOOM_MIN = 0.5, ZOOM_MAX = 1.15;
 let fitDist = 0;
 const viewDir = CAM_DIR.clone();
@@ -149,7 +153,8 @@ function resize() {
 }
 // ズームの度合いに応じて注目点を「鍋」〜「カウンター全体」の間で動かす
 function zoomTarget(ratio, out) {
-  const k = THREE.MathUtils.smoothstep(ratio, ZOOM_MIN, 1);
+  // 0.8 くらいまでは鍋を中心に保ち、そこから全体（カウンター）へ移る
+  const k = THREE.MathUtils.smoothstep(ratio, 0.8, 1);
   return out.lerpVectors(POT_TARGET, CAM_TARGET, k);
 }
 function placeCamera() {
@@ -164,6 +169,28 @@ function setView(ratio, az = 0, tilt = 0) {
   viewDir.setFromSpherical(sph).normalize();
   viewRatio = ratio;
   placeCamera();
+}
+// 営業開始のアングル：鍋に寄った少し斜めの角度。スマホでは網（引き上げ先）と鍋が両方入るまで引く
+function startView() {
+  setView(0.56, 0.32, -0.08);
+  if (window.innerWidth > 640) return;
+  const w = window.innerWidth;
+  const sx = (v) => (v.clone().project(camera).x * 0.5 + 0.5) * w;
+  const sy = (v) => (-v.clone().project(camera).y * 0.5 + 0.5) * window.innerHeight;
+  // 網は中心が画面の右端の内側に入ればよい（右の端が少し切れても、ドラッグ先として見える）
+  const rackRight = new THREE.Vector3(S.RACK.x, S.RACK_Y, S.RACK.z);
+  const potLeft = new THREE.Vector3(S.POT.x - S.POT.R - 0.4, 0.2, S.POT.z);
+  const potFront = new THREE.Vector3(S.POT.x, 0, S.POT.z + S.POT.R);
+  // 鍋の手前のふちが、具材ボタンの上に出る揚げ時間ガイド（帯）より上に来ること
+  const guideTop = $('bottombar').getBoundingClientRect().top - 66;
+  for (const az of [0.32, 0.22, 0.12, 0, -0.12, -0.22]) {
+    for (let r = 0.56; r <= 1.0; r += 0.02) {
+      setView(r, az, -0.08);
+      camera.updateMatrixWorld();
+      if (sx(rackRight) <= w - 28 && sx(potLeft) >= 0 && sy(potFront) <= guideTop) return;
+    }
+  }
+  setView(1, 0);
 }
 const _zt = new THREE.Vector3();
 function followZoom() {
@@ -536,15 +563,17 @@ function discard(rec) {
 }
 
 function showEvaluation(it, ev, pos) {
-  const p = toScreen(pos.clone().add(new THREE.Vector3(0, 0.6, 0)));
+  // 網の上（置いた天ぷらのすぐ上）に小さく出して、すぐ消す
+  const p = toScreen(pos.clone().add(new THREE.Vector3(0, 0.5, 0)));
   const el = document.createElement('div');
   el.className = 'toast' + (ev.score >= 90 ? ' great' : ev.score < 50 ? ' bad' : '');
   el.innerHTML = `<div class="s">${ev.score}<small>${t('pts')}</small></div><div class="c">${ev.comment}</div>
     <div class="d">${t('detail', { color: ev.color, even: ev.evenness, done: ev.doneness, crisp: ev.crisp })}</div>`;
-  el.style.left = clamp(p.x, 110, innerWidth - 110) + 'px';
-  el.style.top = clamp(p.y, 120, innerHeight) + 'px';
   $('toasts').appendChild(el);
-  setTimeout(() => el.remove(), 3200);
+  const w = el.offsetWidth, h = el.offsetHeight;
+  el.style.left = clamp(p.x, w / 2 + 6, innerWidth - w / 2 - 6) + 'px';
+  el.style.top = clamp(p.y, h + 60, innerHeight - 10) + 'px';
+  setTimeout(() => el.remove(), 1800);
   if (ev.score >= 80) audio.good(); else if (ev.score < 45) audio.bad();
 }
 
@@ -662,21 +691,45 @@ function updateCustomers(dt) {
       }
     }
     const p = toScreen(new THREE.Vector3(g.position.x, g.position.y + 2.15, g.position.z));
-    // 吹き出しは頭の上。狭い画面で上のバーにかかるときだけ、顔を隠さないよう頭の横に出す
+    // 吹き出しは頭の上。上のバーや画面の上端にかかるときは、顔を隠さないよう頭の横に出す
+    //（右端のお客さんは頭の左側）。どちらでも必ず画面内・上のバーの下に収める
     const w = c.el.offsetWidth, h = c.el.offsetHeight;
-    const overlap = p.x + w / 2 > bar.left - 6 && p.x - w / 2 < bar.right + 6 && p.y - 10 - h < bar.bottom + 6;
-    if (overlap) {
+    const overBar = p.x + w / 2 > bar.left - 6 && p.x - w / 2 < bar.right + 6;
+    const topLimit = (overBar ? bar.bottom : 0) + 6;
+    if (p.y - 10 - h < topLimit) {
       const head = toScreen(new THREE.Vector3(g.position.x, g.position.y + 1.55, g.position.z));
-      const side = toScreen(new THREE.Vector3(g.position.x + 0.62, g.position.y + 1.55, g.position.z));
+      const right = toScreen(new THREE.Vector3(g.position.x + 0.62, g.position.y + 1.55, g.position.z));
+      const left = toScreen(new THREE.Vector3(g.position.x - 0.62, g.position.y + 1.55, g.position.z));
+      // 右に出すと画面からはみ出すときだけ左へ（どちらでも最後は画面の内側に寄せる）
+      const toLeft = right.x + 6 + w > innerWidth - 4 && left.x - 6 - w >= 4;
       c.el.classList.add('side');
-      c.el.style.left = side.x + 'px';
-      c.el.style.top = Math.max(head.y, bar.bottom + 8 + h / 2) + 'px';
+      c.el.classList.toggle('side-left', toLeft);
+      c.el.style.left = (toLeft ? clamp(left.x - 6, 4 + w, innerWidth - 4) : clamp(right.x, 4, innerWidth - 16 - w)) + 'px';
+      c.el.style.top = clamp(head.y, bar.bottom + 8 + h / 2, innerHeight - h / 2 - 4) + 'px';
     } else {
-      c.el.classList.remove('side');
-      c.el.style.left = p.x + 'px';
+      c.el.classList.remove('side', 'side-left');
+      c.el.style.left = clamp(p.x, w / 2 + 4, innerWidth - w / 2 - 4) + 'px';
       c.el.style.top = p.y + 'px';
     }
   }
+  separateBubbles();
+}
+
+// 吹き出し同士が重ならないよう、左右に並べ直す（画面からははみ出さない）
+//   左から順に「前の吹き出しの右」より右へ置き、右端からはみ出したら右から順に詰め直す
+function separateBubbles() {
+  const els = seats.map(s => s.customer && s.customer.el).filter(e => e && !e.classList.contains('hidden') && e.style.opacity !== '0');
+  const it = els.map(e => ({ e, r: e.getBoundingClientRect() })).sort((a, b) => a.r.left - b.r.left);
+  const gap = 4, W = innerWidth;
+  const vo = (a, b) => a.r.top < b.r.bottom && b.r.top < a.r.bottom; // 縦に重なる高さにある
+  const L = it.map(o => o.r.left);
+  for (let i = 0; i < it.length; i++) for (let k = 0; k < i; k++) if (vo(it[i], it[k])) L[i] = Math.max(L[i], L[k] + it[k].r.width + gap);
+  for (let i = it.length - 1; i >= 0; i--) {
+    L[i] = Math.min(L[i], W - gap - it[i].r.width);
+    for (let k = i + 1; k < it.length; k++) if (vo(it[i], it[k])) L[i] = Math.min(L[i], L[k] - gap - it[i].r.width);
+    L[i] = Math.max(L[i], gap);
+  }
+  it.forEach((o, i) => { const dx = L[i] - o.r.left; if (Math.abs(dx) > 0.5) o.e.style.left = (parseFloat(o.e.style.left) + dx) + 'px'; });
 }
 
 // 油が切れたものから、待っているお客さんへ
@@ -914,13 +967,22 @@ function guideTip(it) {
   if (tt <= lift + 2) return { text: t('gLiftNow'), cls: 'now' };
   return { text: t('gLiftLate'), cls: 'warn' };
 }
+// 次の操作（返す／上げる）までの残り秒。小さいほど急ぐ
+function urgency(it) {
+  return (it.flipCount ? it.def.lift : it.def.flip) - it.timeInOil;
+}
+const MOBILE = () => window.innerWidth <= 640;
 function updateGuide() {
-  // スマホでは具材ボタンのすぐ上に出す
+  // スマホでは具材ボタンのすぐ上に、1本の帯で「いちばん急ぐ具材」だけを出す
   const bb = $('bottombar').getBoundingClientRect();
-  guideBox.style.setProperty('--guide-bottom', Math.round(window.innerHeight - bb.top + 8) + 'px');
+  guideBox.style.setProperty('--guide-bottom', Math.round(window.innerHeight - bb.top + 6) + 'px');
+  let list = state.items.filter(it => it.tutorial && (it.state === 'oil' || it.state === 'held') && state.mode !== 'demo');
+  const others = MOBILE() ? Math.max(0, list.length - 1) : 0;
+  if (MOBILE()) list = list.sort((a, b) => urgency(a) - urgency(b)).slice(0, 1);
+  guideBox.dataset.more = others ? t('guideMore', { n: others }) : '';
+  guideBox.classList.toggle('has-more', others > 0);
   const live = new Set();
-  for (const it of state.items) {
-    if (!it.tutorial || (it.state !== 'oil' && it.state !== 'held') || state.mode === 'demo') continue;
+  for (const it of list) {
     live.add(it);
     let el = guideCards.get(it);
     const { flip, lift } = it.def;
@@ -1111,7 +1173,6 @@ async function startGame(mode) {
   try { await prepareAll(); } finally { starting = false; }
   audio.startBgm();
   // 鍋のアップ・少し斜めから始めて、視点を動かせることを伝える
-  setView(0.56, 0.32, -0.08);
   clearAll();
   state.mode = mode;
   state.master = $('opt-master').checked;
@@ -1126,6 +1187,7 @@ async function startGame(mode) {
   $('hud').classList.remove('hidden');
   $('labels').classList.remove('hidden');
   updateIngredientButtons();
+  startView(); // 具材ボタンが表示されてから、開始アングルを決める
 }
 
 function endGame() {
@@ -1268,4 +1330,4 @@ $('loading').classList.add('hidden');
 frame();
 
 // デバッグ用
-window.__tempura = { PATIENCE, simStep, INGREDIENTS, setView, audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
+window.__tempura = { separateBubbles, PATIENCE, simStep, INGREDIENTS, setView, audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
