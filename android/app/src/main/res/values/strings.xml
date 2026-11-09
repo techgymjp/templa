@@ -4,6 +4,6 @@
     <string name="title_activity_main">てんぷら職人</string>
     <string name="package_name">jp.techgym.templa</string>
     <string name="custom_url_scheme">jp.techgym.templa</string>
-    <!-- AdMob のアプリ ID。いまは Google 公式のテスト用 ID。AdMob で「てんぷら職人」を登録したら差し替える -->
-    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+    <!-- AdMob のアプリ ID（「てんぷら職人」Android） -->
+    <string name="admob_app_id">ca-app-pub-6411535997477460~2582112401</string>
 </resources>

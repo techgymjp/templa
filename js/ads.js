@@ -10,11 +10,11 @@ window.Ads = (() => {
         rewarded: 'ca-app-pub-3940256099942544/5224354917',
         banner: 'ca-app-pub-3940256099942544/6300978111',
       },
-      // 本番の広告ユニット(AdMob の「てんぷら職人」Android)。AdMob で作ったら入れる。空の種類は本番ビルドでは出さない
+      // 本番の広告ユニット(AdMob の「てんぷら職人」Android)。空の種類は本番ビルドでは出さない
       production: {
         interstitial: '',
         rewarded: '',
-        banner: '',
+        banner: 'ca-app-pub-6411535997477460/4216813611',
       },
     },
     ios: {
