@@ -232,56 +232,52 @@ h2 { font-family: var(--font-title); font-weight: 400; font-size: 30px; margin: 
 .howto-link { text-align: center; margin: 14px 0 0; }
 .howto-link a { color: var(--accent); font-weight: 700; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; padding: 6px 10px; }
 
-/* 揚げ時間ガイド（各具材の1回目だけ）：画面の左端に縦に並べる */
+/* 揚げ時間ガイド（各具材の1回目だけ）：小さなカードを重ならないように並べる */
 #guide {
   position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 8px; width: 210px; pointer-events: none !important;
+  display: flex; flex-direction: column; gap: 6px; width: 240px; pointer-events: none !important;
 }
 .g-card {
-  background: rgba(43, 29, 18, .88); color: #fff; border-radius: 12px; padding: 6px 10px 8px;
+  background: rgba(43, 29, 18, .88); color: #fff; border-radius: 10px; padding: 4px 8px 5px;
   border: 2px solid transparent;
 }
 .g-card.now { border-color: #9cf08c; }
 .g-card.warn { border-color: #ff9b85; }
-.g-head { display: flex; align-items: center; gap: 6px; }
-.g-head svg { flex: 0 0 auto; }
-.g-name { font-family: var(--font-title); font-size: 17px; flex: 1; }
-.g-sec { font-size: 24px; font-weight: 700; color: #ffe7a6; font-variant-numeric: tabular-nums; line-height: 1; }
-.g-sec small { font-size: 12px; margin-left: 1px; }
-.g-bar { position: relative; height: 10px; margin: 22px 2px 4px; border-radius: 5px; background: rgba(255, 255, 255, .18); }
-.g-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: linear-gradient(90deg, #f3e2ad, #dca14a 70%, #b8722a); }
-.g-tick { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1.5px; border-radius: 2px; }
-.g-tick.flip { background: #ffd88a; }
-.g-tick.lift { background: #9cf08c; }
-.g-tick span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 2px; font-size: 11px; font-weight: 700; white-space: nowrap; }
-.g-tick.flip span { color: #ffd88a; }
-.g-tick.lift span { color: #9cf08c; }
-.g-tip { font-size: 13px; font-weight: 700; text-align: center; }
+.g-head { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.g-head svg { flex: 0 0 auto; width: 22px; height: 22px; }
+.g-name { font-family: var(--font-title); font-size: 14px; flex: 0 1 auto; white-space: nowrap; overflow: hidden; }
+.g-tip { flex: 1; min-width: 0; font-size: 12px; font-weight: 700; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .g-card.now .g-tip { color: #9cf08c; animation: blink .8s infinite; }
 .g-card.warn .g-tip { color: #ff9b85; }
-.g-tick span.s { display: none; }
+.g-sec { flex: 0 0 auto; font-size: 22px; font-weight: 700; color: #ffe7a6; font-variant-numeric: tabular-nums; line-height: 1; }
+.g-sec small { font-size: 11px; margin-left: 1px; }
+.g-bar { position: relative; height: 7px; margin: 13px 2px 1px; border-radius: 4px; background: rgba(255, 255, 255, .18); }
+.g-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg, #f3e2ad, #dca14a 70%, #b8722a); }
+.g-tick { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; border-radius: 2px; }
+.g-tick.flip { background: #ffd88a; }
+.g-tick.lift { background: #9cf08c; }
+.g-tick span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 1px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.g-tick.flip span { color: #ffd88a; }
+.g-tick.lift span { color: #9cf08c; }
 @media (max-width: 640px) {
-  /* スマホ：具材ボタンのすぐ上に、1本の細い帯（いちばん急ぐ具材だけ） */
+  /* スマホ：具材ボタンのすぐ上に2列で並べる */
   #guide {
     left: 6px; right: 6px; width: auto; top: auto; bottom: var(--guide-bottom, 190px); transform: none;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
   }
-  .g-card {
-    display: grid; grid-template-columns: auto auto 1fr; grid-template-rows: auto auto; align-items: center;
-    column-gap: 8px; padding: 3px 10px 4px; border-radius: 10px;
-  }
-  .g-head { grid-row: 1 / span 2; gap: 4px; }
-  .g-head svg { width: 26px; height: 26px; }
-  .g-name { display: none; }
-  .g-sec { font-size: 28px; }
-  .g-sec small { font-size: 12px; }
-  .g-bar { grid-column: 3; grid-row: 2; height: 8px; margin: 15px 2px 3px; }
-  .g-tick span.l { display: none; }
-  .g-tick span.s { display: block; font-size: 13px; font-weight: 700; }
-  .g-tip { grid-column: 2 / span 2; grid-row: 1; font-size: 14px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #guide.has-more::after {
-    content: attr(data-more); position: absolute; right: 8px; top: -18px;
-    font-size: 11px; font-weight: 700; color: #fff; background: rgba(43, 29, 18, .8); padding: 1px 6px; border-radius: 6px;
-  }
+  .g-card { padding: 3px 7px 4px; min-width: 0; }
+  .g-name { display: none; } /* スマホは絵で具材がわかるので名前は省く */
+  .g-sec { font-size: 22px; }
+}
+/* 画面の低いスマホ：4列の1段に。案内の文は省き、枠の色と点滅で知らせる */
+@media (max-width: 640px) and (max-height: 620px) {
+  #guide { grid-template-columns: repeat(4, 1fr); }
+  .g-card { padding: 2px 5px 3px; }
+  .g-head { justify-content: center; }
+  .g-tip { display: none; }
+  .g-sec { font-size: 20px; }
+  .g-card.now { animation: blink .8s infinite; }
+  .g-card.warn { background: rgba(90, 20, 10, .9); }
 }
 }
 }
@@ -300,7 +296,6 @@ html[lang="en"] .ing .i-name { font-size: 14px; }
 html[lang="en"] h1 { letter-spacing: .02em; }
 @media (max-width: 640px) {
   html[lang="en"] .ing .i-name { font-size: 12px; }
-  html[lang="en"] .g-tip { font-size: 13px; }
   html[lang="en"] h1 { font-size: 34px; }
 }
 

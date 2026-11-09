@@ -182,7 +182,8 @@ function startView() {
   const potLeft = new THREE.Vector3(S.POT.x - S.POT.R - 0.4, 0.2, S.POT.z);
   const potFront = new THREE.Vector3(S.POT.x, 0, S.POT.z + S.POT.R);
   // 鍋の手前のふちが、具材ボタンの上に出る揚げ時間ガイド（帯）より上に来ること
-  const guideTop = $('bottombar').getBoundingClientRect().top - 66;
+  const rows = window.innerHeight <= 620 ? 1 : 2; // ガイドの段数（画面の低いスマホは1段）
+  const guideTop = $('bottombar').getBoundingClientRect().top - rows * 58 - 6;
   for (const az of [0.32, 0.22, 0.12, 0, -0.12, -0.22]) {
     for (let r = 0.56; r <= 1.0; r += 0.02) {
       setView(r, az, -0.08);
@@ -959,13 +960,13 @@ const guideCards = new Map();
 function guideTip(it) {
   const tt = it.timeInOil, { flip, lift } = it.def;
   if (!it.flipCount) {
-    if (tt < flip - 0.5) return { text: t('gFlipIn', { n: Math.ceil(flip - tt) }), cls: '' };
-    if (tt <= flip + 1.5) return { text: t('gFlipNow'), cls: 'now' };
-    return { text: t('gFlipLate'), cls: 'warn' };
+    if (tt < flip - 0.5) return { text: t('sFlipIn', { n: Math.ceil(flip - tt) }), cls: '' };
+    if (tt <= flip + 1.5) return { text: t('sFlipNow'), cls: 'now' };
+    return { text: t('sFlipLate'), cls: 'warn' };
   }
-  if (tt < lift - 0.5) return { text: t('gLiftIn', { n: Math.ceil(lift - tt) }), cls: '' };
-  if (tt <= lift + 2) return { text: t('gLiftNow'), cls: 'now' };
-  return { text: t('gLiftLate'), cls: 'warn' };
+  if (tt < lift - 0.5) return { text: t('sLiftIn', { n: Math.ceil(lift - tt) }), cls: '' };
+  if (tt <= lift + 2) return { text: t('sLiftNow'), cls: 'now' };
+  return { text: t('sLiftLate'), cls: 'warn' };
 }
 // 次の操作（返す／上げる）までの残り秒。小さいほど急ぐ
 function urgency(it) {
@@ -973,16 +974,14 @@ function urgency(it) {
 }
 const MOBILE = () => window.innerWidth <= 640;
 function updateGuide() {
-  // スマホでは具材ボタンのすぐ上に、1本の帯で「いちばん急ぐ具材」だけを出す
+  // 揚げているガイド対象の具材を、急ぐ順にすべて並べる（PCは左端に縦一列、スマホは具材ボタンの上に2列）
   const bb = $('bottombar').getBoundingClientRect();
   guideBox.style.setProperty('--guide-bottom', Math.round(window.innerHeight - bb.top + 6) + 'px');
-  let list = state.items.filter(it => it.tutorial && (it.state === 'oil' || it.state === 'held') && state.mode !== 'demo');
-  const others = MOBILE() ? Math.max(0, list.length - 1) : 0;
-  if (MOBILE()) list = list.sort((a, b) => urgency(a) - urgency(b)).slice(0, 1);
-  guideBox.dataset.more = others ? t('guideMore', { n: others }) : '';
-  guideBox.classList.toggle('has-more', others > 0);
+  const list = state.items
+    .filter(it => it.tutorial && (it.state === 'oil' || it.state === 'held') && state.mode !== 'demo')
+    .sort((a, b) => urgency(a) - urgency(b));
   const live = new Set();
-  for (const it of list) {
+  list.forEach((it, rank) => {
     live.add(it);
     let el = guideCards.get(it);
     const { flip, lift } = it.def;
@@ -991,20 +990,20 @@ function updateGuide() {
     if (!el) {
       el = document.createElement('div');
       el.className = 'g-card';
-      el.innerHTML = `<div class="g-head">${iconSVG(it.key, 30)}<span class="g-name">${it.def.name}</span><span class="g-sec"></span></div>
+      el.innerHTML = `<div class="g-head">${iconSVG(it.key, 22)}<span class="g-name">${it.def.name}</span><span class="g-tip"></span><span class="g-sec"></span></div>
         <div class="g-bar"><div class="g-fill"></div>
-          <div class="g-tick flip" style="left:${pct(flip)}"><span class="l">${t('tickFlip', { n: flip })}</span><span class="s">${flip}</span></div>
-          <div class="g-tick lift" style="left:${pct(lift)}"><span class="l">${t('tickLift', { n: lift })}</span><span class="s">${lift}</span></div></div>
-        <div class="g-tip"></div>`;
+          <div class="g-tick flip" style="left:${pct(flip)}"><span>${flip}</span></div>
+          <div class="g-tick lift" style="left:${pct(lift)}"><span>${lift}</span></div></div>`;
       guideBox.appendChild(el);
       guideCards.set(it, el);
     }
     const tip = guideTip(it);
     el.className = 'g-card ' + tip.cls;
+    el.style.order = rank;
     el.querySelector('.g-sec').innerHTML = `${Math.floor(it.timeInOil)}<small>${t('sec')}</small>`;
     el.querySelector('.g-fill').style.width = pct(it.timeInOil);
     el.querySelector('.g-tip').textContent = tip.text;
-  }
+  });
   for (const [it, el] of guideCards) if (!live.has(it)) { el.remove(); guideCards.delete(it); }
 }
 
