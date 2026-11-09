@@ -71,11 +71,57 @@ python3 -m http.server 8000
 `main` ブランチに push すると、GitHub Actions（`.github/workflows/pages.yml`）が GitHub Pages へ自動で公開します。
 公開先: https://techgymjp.github.io/templa/
 
+## Android アプリ
+
+[Capacitor](https://capacitorjs.com/) でゲームのファイルをアプリに同梱し、Android アプリにしています（オフラインで遊べます。three.js とフォントもアプリに同梱）。
+構成は techgymjp/jet-fighter の `docs/ANDROID_PORTING.md` と同じです。
+
+- パッケージ名: `jp.techgym.templa`
+- アプリ名: てんぷら職人（英語の端末では Tempura Master）
+- 縦画面固定・全画面・プレイ中は画面を消さない
+- 戻るボタン: プレイ中は一時停止（一時停止中なら再開）、遊び方ではタイトルへ、タイトル・結果画面ではアプリを終了
+- 別アプリに切り替えると自動で一時停止して音を止める
+- シェアは Android の共有メニュー
+- 遊び方はアプリの中で開く（Web 版は howto.html）
+- タイトル画面にベスト記録・バージョン・プライバシーポリシー・広告の設定（EU など同意が必要な地域だけ）
+- 広告（AdMob）
+  - バナー: タイトル・遊び方・一時停止・結果画面の下中央（プレイ中は出さない）
+  - 全画面広告: 営業開始（タイトル・遊び方から）、タイトルへ（遊び方・一時停止・結果から）、一時停止からの再開、結果からのもう一度のたびに毎回
+  - リワード広告: 50 点未満で網に上げた天ぷらを、広告を見て揚げ直せる（1 営業 5 回まで。その 1 品の成績を取り消し、同じ具材の新しい 1 品を鍋に入れる。結果画面とシェア文に「やり直し N 回」）
+  - 本番の広告ユニット ID は `js/ads.js`、AdMob のアプリ ID は `android/app/src/main/res/values/strings.xml`（いまはテスト用 ID）
+
+### ビルド
+
+GitHub Actions（`.github/workflows/android.yml`）でビルドします。
+
+- 動作確認用 APK（テスト広告）: https://github.com/techgymjp/templa/releases/tag/android-latest
+  （APK 直接: https://github.com/techgymjp/templa/releases/latest/download/tempura-master.apk）
+
+  ![リリース画面の QR コード](docs/apk-qr.png)
+
+- Google Play 用の署名付き AAB（本番広告）: GitHub Secrets（`ANDROID_KEYSTORE_BASE64` など 4 つ）を登録すると、Actions の Artifact に `tempura-master-release-aab` ができます
+
+手元でビルドする場合:
+
+```bash
+npm ci
+npm run android:sync
+cd android && ./gradlew assembleDebug
+```
+
+## ライセンス
+
+著作権はテックジム株式会社に帰属します（All rights reserved）。許可なく複製・改変・再配布すること、Web サイトやアプリ（Google Play、App Store など）として公開・販売すること、名前・アイコン・画像を使うことを禁止します。テックジムの受講生が学習目的で複製・改変することは許可します（アプリストアでの公開・広告の掲載・販売などの商用利用は禁止）。詳しくは `LICENSE` を見てください。three.js・フォントなどはそれぞれのライセンスのままです。
+
 ## ファイル構成
 
 - `index.html` — 画面と UI
 - `howto.html` / `howto.en.html` — 遊び方ページ（日本語 / 英語）
 - `js/i18n.js` — 日本語・英語の文言と切り替え
+- `js/ads.js` / `js/ads-config.js` / `js/build-info.js` — 広告（アプリのみ）、広告のモード、バージョン表示
+- `scripts/build-web.js` — アプリに同梱するファイルを `www/` に作る
+- `android/` — Android プロジェクト（Capacitor）
+- `assets/` — アイコンと起動画面の元画像
 - `js/quality.js` — 画質（軽量表示）の判定
 - `css/style.css` — スタイル
 - `js/main.js` — ゲーム進行・揚げ物の物理・泡・湯気・お客さん・入力・後処理

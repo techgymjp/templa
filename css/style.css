@@ -329,3 +329,23 @@ html[lang="en"] h1 { letter-spacing: .02em; }
 .share-row { display: flex; justify-content: center; margin: 14px 0 0; }
 button.share { background: #1f1f1f; color: #fff; border-color: #000; box-shadow: 0 3px 0 #000; padding: 9px 22px; }
 button.share::before { content: "↗ "; }
+
+/* ---------- アプリ（Android） ---------- */
+.best { text-align: center; font-weight: 700; color: var(--accent); margin: -6px 0 10px; font-size: 16px; }
+.legal { text-align: center; font-size: 12px; color: #8a6a50; margin: 8px 0 0; }
+.legal a { color: #8a6a50; }
+/* バナー広告（画面の下・高さ 50px）に隠れないよう、メニュー画面の下をあける */
+body.native .overlay { padding-bottom: 66px; }
+/* アプリの中の遊び方 */
+#howto-app { align-items: stretch; }
+.howto-wrap { display: flex; flex-direction: column; width: 100%; max-width: 760px; margin: 0 auto; gap: 8px; }
+#howto-frame { flex: 1; width: 100%; border: 3px solid var(--ink); border-radius: 14px; background: var(--paper); }
+.howto-wrap .modes { margin: 0; }
+/* 揚げ直しの案内（リワード広告） */
+#redo {
+  position: absolute; left: 50%; top: 64px; transform: translateX(-50%); width: min(92%, 420px);
+  background: rgba(43, 29, 18, .94); color: #fff; border: 2px solid #ffd88a; border-radius: 12px; padding: 8px 10px 10px; text-align: center;
+}
+#redo p { margin: 0 0 6px; font-size: 13px; }
+.redo-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.redo-btns button { font-size: 14px; padding: 7px 10px; }

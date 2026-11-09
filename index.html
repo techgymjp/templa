@@ -46,6 +46,11 @@
 
     <div id="warn" class="hidden"></div>
     <div id="guide"></div>
+    <!-- リワード広告のチート：失敗した天ぷらを揚げ直す（アプリのみ） -->
+    <div id="redo" class="hidden">
+      <p id="redo-note"></p>
+      <div class="redo-btns"><button id="redo-watch" class="primary"></button><button id="redo-next"></button></div>
+    </div>
 
     <div id="bottombar">
       <div id="ingredients"></div>
@@ -60,6 +65,7 @@
     <div class="card">
       <h1 data-i18n="title">てんぷら職人</h1>
       <p class="sub" data-i18n="tagline">油の音を聴き、泡を見て、カラッと揚げろ。</p>
+      <p class="best hidden" id="best"></p>
       <div class="modes">
         <button class="primary" data-mode="shift" data-i18n="start">営業開始（2分30秒）</button>
       </div>
@@ -68,6 +74,18 @@
       <p class="howto-link"><a href="howto.html" data-i18n="howto" data-i18n-href="howtoHref">遊び方を見る ›</a></p>
       <p class="lang-switch"><button type="button" data-lang="ja">日本語</button> / <button type="button" data-lang="en">English</button></p>
       <p class="tiny" data-i18n="sound">音が出ます。</p>
+      <p class="legal hidden" id="legal"><span id="buildInfo"></span> <a href="https://techgym.jp/privacy-policy/" target="_blank" rel="noopener" data-i18n="privacy" data-i18n-href="privacyUrl">プライバシーポリシー</a><span id="adPrivacy" class="hidden"> ｜ <a href="#" id="adPrivacyLink" data-i18n="adSettings">広告の設定</a></span></p>
+    </div>
+  </div>
+
+  <!-- アプリの中で開く遊び方（Web 版は howto.html を開く） -->
+  <div id="howto-app" class="overlay hidden">
+    <div class="howto-wrap">
+      <iframe id="howto-frame" title="howto"></iframe>
+      <div class="modes">
+        <button class="primary" id="howto-play" data-i18n="start">営業開始（2分30秒）</button>
+        <button id="howto-back" data-i18n="toTitle">タイトルへ</button>
+      </div>
     </div>
   </div>
 
@@ -102,6 +120,10 @@
     </div>
   </div>
 
+  <!-- アプリ（Android）用：ビルド情報・広告の設定・広告。Web 版では何もしない -->
+  <script src="js/build-info.js"></script>
+  <script src="js/ads-config.js"></script>
+  <script src="js/ads.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

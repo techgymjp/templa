@@ -204,6 +204,13 @@ window.addEventListener('resize', resize);
 resize();
 
 const audio = new FryAudio();
+// Android アプリ（Capacitor）で動いているか。Web 版では Capacitor がないので何もしない
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const plugin = (name) => (NATIVE && window.Capacitor.Plugins ? window.Capacitor.Plugins[name] : null);
+const Ads = window.Ads || { available: false, canReward: false, showing: false, privacyOptionsRequired: false, initDone: Promise.resolve(),
+  showInterstitial: async () => {}, showRewarded: async () => 'unavailable', setBanner() {}, showPrivacyOptions: async () => {} };
+// 広告の表示中は音を止める（js/ads.js が呼ぶ）
+window.Sound = { suspend: () => audio.suspend(), resume: () => { if (!state.paused) audio.resume(); } };
 audio.bgmOn = store.get('bgm', true);
 
 // ---------------------------------------------------------------
@@ -549,9 +556,11 @@ function liftItem(it) {
     if (state.stats) {
       state.stats.fried++;
       state.stats.qualSum += ev.score;
+      state.stats.scores.push(ev.score);
       state.stats.best = Math.max(state.stats.best, ev.score);
       if (ev.score >= 90) state.stats.perfect++;
     }
+    offerRedo(rec); // 失敗した天ぷらなら、少し待ってから「揚げ直す」を出す（アプリのみ）
   });
 }
 
@@ -739,7 +748,7 @@ function tryServeFromRack() {
     const c = seat.customer;
     if (!c || c.state !== 'waiting') continue;
     const key = c.orders[c.idx];
-    const cands = state.rack.filter(r => r.item.key === key && !r.serving && r.t >= 1.8);
+    const cands = state.rack.filter(r => r.item.key === key && !r.serving && !r.hold && r.t >= 1.8);
     if (!cands.length) continue;
     cands.sort((a, b) => b.item.quality - a.item.quality);
     serve(cands[0], seat);
@@ -1178,7 +1187,9 @@ async function startGame(mode) {
   state.running = true; state.paused = false;
   state.time = SHIFT_TIME; state.score = 0;
   state.temp = OIL_SET; state.pendingDrop = 0;
-  state.stats = { fried: 0, served: 0, missed: 0, qualSum: 0, best: 0, perfect: 0 };
+  state.stats = { fried: 0, served: 0, missed: 0, qualSum: 0, best: 0, perfect: 0, scores: [] };
+  state.redoUsed = 0;
+  closeRedo();
   tutorialDone = new Set(); // 営業のたびに、各具材の1回目でゲージを出す
   $('score').textContent = 0;
   seats[1].cooldown = 0.3;
@@ -1194,7 +1205,12 @@ const SHARE_URL = 'https://techgym.jp/column/claude-code-game-tempura/';
 let lastResult = null;
 async function shareResult() {
   if (!lastResult) return;
-  const text = t('shareText', lastResult);
+  const text = t('shareText', lastResult) + (lastResult.redo ? t('shareRedo', { n: lastResult.redo }) : '');
+  const nativeShare = plugin('Share');
+  if (nativeShare) {
+    try { await nativeShare.share({ title: t('shareTitle'), text, url: SHARE_URL, dialogTitle: t('shareDialog') }); } catch (e) { /* キャンセル */ }
+    return;
+  }
   if (navigator.share) {
     try { await navigator.share({ title: t('shareTitle'), text, url: SHARE_URL }); return; }
     catch (e) { if (e && e.name === 'AbortError') return; } // 閉じただけなら何もしない
@@ -1221,9 +1237,13 @@ function endGame() {
     <tr><td>${t('rBest')}</td><td>${st.best} ${t('uPts')}</td></tr>
     <tr><td>${t('rPerfect')}</td><td>${st.perfect} ${t('uItems')}</td></tr>
     <tr><td>${t('rMissed')}</td><td>${st.missed} ${t('uPeople')}</td></tr>
+    ${state.redoUsed ? `<tr><td>${t('rRedo')}</td><td>${state.redoUsed} ${t('uTimes')}</td></tr>` : ''}
     ${state.master ? `<tr><td>${t('rMaster')}</td><td>×1.3</td></tr>` : ''}
   </table><div class="comment">${comment}</div>`;
-  lastResult = { score: state.score, rank, avg };
+  lastResult = { score: state.score, rank, avg, redo: state.redoUsed };
+  const best = store.get('best', null);
+  if (!best || state.score > best.score) store.set('best', { score: state.score, rank });
+  closeRedo();
   showOverlay('result');
   $('hud').classList.add('hidden');
   $('labels').classList.add('hidden');
@@ -1236,6 +1256,7 @@ function toTitle() {
   state.mode = 'demo'; state.running = false; state.paused = false;
   state.temp = OIL_SET; state.stats = null;
   for (const id of ['result', 'pause', 'hud']) $(id).classList.add('hidden');
+  updateBest();
   showOverlay('title');
 }
 
@@ -1246,13 +1267,158 @@ function setPaused(p) {
   if (p) audio.suspend(); else audio.resume();
 }
 
-document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => startGame(b.dataset.mode)));
+// ---------- 全画面広告（アプリのみ） ----------
+// 営業開始（タイトル・遊び方から）・タイトルへ（遊び方・一時停止・結果から）・一時停止からの再開・結果からのもう一度で毎回出す
+let adBusy = false;
+async function withInterstitial(next) {
+  if (adBusy) return;
+  adBusy = true;
+  Ads.setBanner(false); // 次の描画を待たずに、すぐバナーを引っ込める
+  try {
+    if (Ads.available) await Ads.showInterstitial(3000);
+    await next(); // 次の画面に切り替わるまでバナーを出さない（一瞬だけ出るのを防ぐ）
+  } finally { adBusy = false; }
+}
+function play() { audio.init(); withInterstitial(async () => { closeHowto(); await startGame('shift'); }); }
+function goTitle() { withInterstitial(() => { closeHowto(); toTitle(); }); }
+function resumeFromPause() { withInterstitial(() => setPaused(false)); }
+
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', play));
 $('btn-pause').addEventListener('click', () => setPaused(true));
-$('btn-resume').addEventListener('click', () => setPaused(false));
-$('btn-quit').addEventListener('click', toTitle);
-$('btn-title').addEventListener('click', toTitle);
+$('btn-resume').addEventListener('click', () => { if (state.paused) resumeFromPause(); });
+$('btn-quit').addEventListener('click', goTitle);
+$('btn-title').addEventListener('click', goTitle);
 $('btn-share').addEventListener('click', shareResult);
-document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
+// 裏に回ったら一時停止して音を止める（広告の表示中は広告側が音を止めている）
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { setPaused(true); audio.suspend(); }
+  else if (!state.paused && !Ads.showing) audio.resume();
+});
+
+// ---------- アプリの中の遊び方（Web 版は howto.html を開く） ----------
+function openHowto() {
+  $('howto-frame').src = t('howtoHref') + '?embed=1';
+  showOverlay('howto-app');
+}
+function closeHowto() { $('howto-app').classList.add('hidden'); }
+document.querySelector('.howto-link a').addEventListener('click', (e) => {
+  if (!NATIVE) return;
+  e.preventDefault();
+  openHowto();
+});
+$('howto-play').addEventListener('click', play);
+$('howto-back').addEventListener('click', () => withInterstitial(closeHowto));
+
+// ---------- Android の戻るボタン ----------
+// プレイ中は一時停止（一時停止中なら再開）、遊び方ではタイトルへ、タイトル・結果画面ではアプリを閉じる
+if (plugin('App')) {
+  plugin('App').addListener('backButton', () => {
+    if (adBusy || starting) return;
+    if (!$('howto-app').classList.contains('hidden')) withInterstitial(closeHowto);
+    else if (!state.running) plugin('App').exitApp();
+    else if (state.paused) resumeFromPause();
+    else setPaused(true);
+  });
+}
+
+// ---------- バナー広告：タイトル・遊び方・一時停止・結果画面だけ（プレイ中は出さない） ----------
+function updateBanner() {
+  const menu = !state.running || state.paused;
+  Ads.setBanner(menu && !adBusy && !redo.busy && $('loading').classList.contains('hidden'));
+}
+
+// ---------- タイトル画面：ベスト記録・バージョン・プライバシーポリシー・広告の設定 ----------
+function updateBest() {
+  const b = store.get('best', null);
+  $('best').classList.toggle('hidden', !b);
+  if (b) $('best').textContent = t('best', b);
+}
+updateBest();
+if (NATIVE) {
+  document.body.classList.add('native');
+  $('legal').classList.remove('hidden');
+  if (window.APP_VERSION && window.APP_VERSION !== 'dev') $('buildInfo').textContent = window.APP_VERSION + ' ｜';
+  Ads.initDone.then(() => { if (Ads.privacyOptionsRequired) $('adPrivacy').classList.remove('hidden'); });
+  $('adPrivacyLink').addEventListener('click', (e) => { e.preventDefault(); Ads.showPrivacyOptions(); });
+}
+
+// ---------- リワード広告のチート：失敗した天ぷらを揚げ直す（アプリのみ・1 営業 5 回まで） ----------
+// 50 点未満で網に上げたら、評価を見届けられるよう少し待ってから「広告を見てこの天ぷらを揚げ直す」を出す（数秒で消える）。
+// 最後まで見たら、その 1 品の成績を取り消し、同じ具材の新しい 1 品を鍋に入れる。案内が出ている間、その 1 品はお客さんに出さない
+const REDO_DELAY = 2.2, REDO_WAIT = 6, REDO_MAX = 5, REDO_BELOW = 50;
+const redo = { active: false, busy: false, t: 0, pending: 0, rec: null };
+function offerRedo(rec) {
+  if (!NATIVE || !Ads.canReward || state.mode !== 'shift' || !state.running) return;
+  if (rec.ev.score >= REDO_BELOW || state.redoUsed >= REDO_MAX || redo.active || redo.pending > 0) return;
+  rec.hold = true;
+  Object.assign(redo, { pending: REDO_DELAY, rec });
+}
+function showRedo() {
+  const rec = redo.rec;
+  if (!rec || !state.rack.includes(rec)) { closeRedo(); return; }
+  Object.assign(redo, { active: true, busy: false, t: REDO_WAIT, pending: 0 });
+  $('redo-watch').disabled = false;
+  $('redo-watch').textContent = t('redoWatch');
+  $('redo-note').textContent = t('redoNote', { name: rec.item.def.name, score: rec.ev.score, n: REDO_MAX - state.redoUsed, max: REDO_MAX });
+  $('redo').classList.remove('hidden');
+}
+function closeRedo() {
+  if (redo.rec) redo.rec.hold = false;
+  Object.assign(redo, { active: false, busy: false, pending: 0, rec: null });
+  $('redo').classList.add('hidden');
+}
+function updateRedo(dt) {
+  if (redo.pending > 0) { redo.pending -= dt; if (redo.pending <= 0) showRedo(); return; }
+  if (!redo.active || redo.busy) return;
+  redo.t -= dt;
+  $('redo-next').textContent = t('redoNext', { s: Math.max(0, Math.ceil(redo.t)) });
+  if (redo.t <= 0) closeRedo();
+}
+$('redo-next').addEventListener('click', closeRedo);
+$('redo-watch').addEventListener('click', async () => {
+  if (!redo.active || redo.busy) return;
+  redo.busy = true;
+  $('redo-watch').disabled = true;
+  $('redo-watch').textContent = t('redoLoading');
+  state.paused = true; // 広告を見ている間は営業を止める（一時停止画面は出さない）
+  Ads.setBanner(false);
+  const result = await Ads.showRewarded();
+  state.paused = false;
+  audio.resume();
+  if (!redo.active) return;
+  if (result === 'unavailable') {
+    $('redo-note').textContent = t('redoFail');
+    setTimeout(closeRedo, 2000);
+    return;
+  }
+  const rec = redo.rec;
+  closeRedo();
+  if (result !== 'rewarded' || !rec || !state.rack.includes(rec)) return;
+  // 失敗した 1 品の成績を取り消して、同じ具材をもう一度鍋へ
+  const st = state.stats, sc = rec.ev.score;
+  st.fried--; st.qualSum -= sc;
+  const i = st.scores.indexOf(sc); if (i >= 0) st.scores.splice(i, 1);
+  st.best = st.scores.length ? Math.max(...st.scores) : 0;
+  state.rack = state.rack.filter(r => r !== rec);
+  discard(rec);
+  state.redoUsed++;
+  refry(rec.item.key);
+});
+// 衣をつけた新しい 1 品を、空いている所にすぐ入れる
+function refry(key) {
+  const it = new Tempura(key);
+  it.showBatter(); it.updateLook();
+  state.items.push(it);
+  scene.add(it.group);
+  it.group.position.copy(findSpot(it.radius));
+  it.group.rotation.y = Math.random() * 6.283;
+  it.state = 'oil'; it.timeInOil = 0;
+  state.pendingDrop += 1.5 + it.radius * 2.5;
+  audio.splash(1);
+  splashAt(it.group.position, it.radius, 1);
+  updateIngredientButtons();
+}
+
 window.addEventListener('keydown', e => {
   if (e.key === 'Escape' || e.key === 'p') setPaused(!state.paused);
   const n = parseInt(e.key, 10);
@@ -1323,6 +1489,7 @@ function simStep(dt) {
   }
   if (state.mode === 'demo') updateRack(dt);
   if (!state.sim) updateLabels();
+  if (state.running) updateRedo(dt);
   if (!state.sim) updateGuide();
   if (!state.sim) updateHUD();
 }
@@ -1332,10 +1499,10 @@ function frame() {
   const rawDt = clock.getDelta();
   if (!state.timeScale) adaptQuality(rawDt);
   const dt = Math.min(0.05, rawDt) * (state.timeScale || 1);
-  controls.update();
-  followZoom();
+  if (!state.freezeCam) { controls.update(); followZoom(); } // freezeCam は画像の撮影用
   stMat.uniforms.pscale.value = renderer.domElement.height * 0.5;
   if (!state.paused && !state.sim) simStep(dt);
+  updateBanner();
   finish.uniforms.uTime.value = time;
   // スマホなどでは後処理を通さず直接描画して軽くする
   if (LOW) renderer.render(scene, camera); else composer.render();
@@ -1345,4 +1512,4 @@ $('loading').classList.add('hidden');
 frame();
 
 // デバッグ用
-window.__tempura = { separateBubbles, PATIENCE, simStep, INGREDIENTS, setView, audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };
+window.__tempura = { camera, controls, separateBubbles, PATIENCE, simStep, INGREDIENTS, setView, audio, viewInfo, state, addIngredient, liftItem, flipItem, startGame, seats, toScreen, RACK: S.RACK.clone().setY(S.RACK_Y) };

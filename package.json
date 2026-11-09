@@ -1,0 +1,24 @@
+{
+  "name": "tempura-master",
+  "version": "1.0.0",
+  "private": true,
+  "description": "てんぷら職人 / Tempura Master 天ぷらを揚げる 3D ゲーム（Web / Android）",
+  "scripts": {
+    "build": "node scripts/build-web.js",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor-community/admob": "^8.2.1",
+    "@capacitor/android": "8.5.2",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/share": "8.0.3",
+    "@fontsource/yuji-syuku": "5.3.1",
+    "@fontsource/zen-maru-gothic": "5.3.1",
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2"
+  }
+}
