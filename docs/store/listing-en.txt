@@ -1,0 +1,35 @@
+Tempura Master — Google Play store listing (English, en-US)
+
+[App name] (30 characters max)
+Tempura Master: Cooking Game
+
+[Short description] (80 characters max)
+Read the bubbles and the sound, flip at the right time, and fry crispy tempura!
+
+[Full description]
+Serve freshly fried tempura to the customers at your counter in this 3D cooking game.
+
+HOW TO PLAY
+- Customers order with a picture in a speech bubble: shrimp, whiting, eel, scallop, oyster, eggplant, shishito pepper, lotus root, maitake and kakiage
+- Pick an ingredient: it is dipped in batter and dropped into the copper pot
+- Only the side in the oil browns, so tap to flip it halfway
+- When it is done, drag it to the rack, let the oil drain, and it is served
+
+READ THE BUBBLES AND THE SOUND
+Right after it goes in, big bubbles burst and steam rises. As the moisture cooks off, the bubbles get small and the sizzle turns into a light crackle. Golden brown scores high; too early and it is raw inside, too late and it burns. Put too many pieces in at once and the oil cools down, making them soggy.
+
+EARN YOUR RANK
+Each 2:30 shift gives you your sales and a rank, from Apprentice to Master and Tempura God. A frying-time guide appears for the first piece of each ingredient, so beginners can learn the timing. Once you know it, try Master mode, which hides the seconds for a x1.3 score.
+
+DETAILS
+- A hammered copper pot, clear oil, crunchy batter and a cypress counter in 3D
+- Realistic sizzling and crackling sounds
+- Music: J.S. Bach, Prelude in C major
+- Japanese and English. Playable offline
+
+This app contains ads.
+
+[Release notes]
+<en-US>
+First release. Read the bubbles and the sound, and fry crispy tempura!
+</en-US>
