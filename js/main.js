@@ -1189,6 +1189,20 @@ async function startGame(mode) {
   startView(); // 具材ボタンが表示されてから、開始アングルを決める
 }
 
+// 結果のシェア：スマホは端末のシェア機能、PC などは X の投稿画面
+const SHARE_URL = 'https://techgym.jp/column/claude-code-game-tempura/';
+let lastResult = null;
+async function shareResult() {
+  if (!lastResult) return;
+  const text = t('shareText', lastResult);
+  if (navigator.share) {
+    try { await navigator.share({ title: t('shareTitle'), text, url: SHARE_URL }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; } // 閉じただけなら何もしない
+  }
+  const u = 'https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(SHARE_URL);
+  window.open(u, '_blank', 'noopener');
+}
+
 function endGame() {
   state.running = false;
   const st = state.stats;
@@ -1209,6 +1223,7 @@ function endGame() {
     <tr><td>${t('rMissed')}</td><td>${st.missed} ${t('uPeople')}</td></tr>
     ${state.master ? `<tr><td>${t('rMaster')}</td><td>×1.3</td></tr>` : ''}
   </table><div class="comment">${comment}</div>`;
+  lastResult = { score: state.score, rank, avg };
   showOverlay('result');
   $('hud').classList.add('hidden');
   $('labels').classList.add('hidden');
@@ -1236,6 +1251,7 @@ $('btn-pause').addEventListener('click', () => setPaused(true));
 $('btn-resume').addEventListener('click', () => setPaused(false));
 $('btn-quit').addEventListener('click', toTitle);
 $('btn-title').addEventListener('click', toTitle);
+$('btn-share').addEventListener('click', shareResult);
 document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
 window.addEventListener('keydown', e => {
   if (e.key === 'Escape' || e.key === 'p') setPaused(!state.paused);
