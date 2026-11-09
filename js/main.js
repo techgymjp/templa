@@ -422,7 +422,7 @@ function findSpot(radius) {
 }
 
 function addIngredient(key) {
-  if (state.busy || state.paused) return;
+  if (state.busy || state.paused || redo.active) return;
   if (oilItems().length >= MAX_IN_POT) { flashPotFull(); return; }
   if (state.mode !== 'demo') audio.init();
   state.busy = true;
@@ -938,7 +938,7 @@ function updateIngredientButtons() {
   const full = oilItems().length >= MAX_IN_POT;
   for (const [k, b] of Object.entries(ingButtons)) {
     b.classList.toggle('wanted', wanted.has(k));
-    b.disabled = state.busy || full;
+    b.disabled = state.busy || full || redo.active;
   }
 }
 
@@ -1073,7 +1073,7 @@ function overRack(p) { return Math.abs(p.x - S.RACK.x) < 1.9 && Math.abs(p.z - S
 
 // OrbitControls より先に受け取る
 window.addEventListener('pointerdown', e => {
-  if (e.target !== canvas || !state.running || state.paused) return;
+  if (e.target !== canvas || !state.running || state.paused || redo.active) return;
   setNDC(e);
   const it = pickItem();
   if (it) { press = { x: e.clientX, y: e.clientY, item: it, dragging: false }; controls.enabled = false; }
@@ -1264,7 +1264,7 @@ function setPaused(p) {
   if (!state.running) return;
   state.paused = p;
   if (p) showOverlay('pause'); else $('pause').classList.add('hidden');
-  if (p) audio.suspend(); else audio.resume();
+  if (p) audio.suspend(); else if (!redo.active) audio.resume();
 }
 
 // ---------- 全画面広告（アプリのみ） ----------
@@ -1344,7 +1344,8 @@ if (NATIVE) {
 
 // ---------- リワード広告のチート：失敗した天ぷらを揚げ直す（アプリのみ・1 営業 5 回まで） ----------
 // 50 点未満で網に上げたら、評価を見届けられるよう少し待ってから「広告を見てこの天ぷらを揚げ直す」を出す（数秒で消える）。
-// 最後まで見たら、その 1 品の成績を取り消し、同じ具材の新しい 1 品を鍋に入れる。案内が出ている間、その 1 品はお客さんに出さない
+// 最後まで見たら、その 1 品の成績を取り消し、同じ具材の新しい 1 品を鍋に入れ、待っているお客さん全員の待ち時間を最初に戻す。
+// 案内が出ている間は営業を止め（残り時間・待ち時間・揚げ具合）、その 1 品はお客さんに出さない
 const REDO_DELAY = 2.2, REDO_WAIT = 6, REDO_MAX = 5, REDO_BELOW = 50;
 const redo = { active: false, busy: false, t: 0, pending: 0, rec: null };
 function offerRedo(rec) {
@@ -1360,12 +1361,21 @@ function showRedo() {
   $('redo-watch').disabled = false;
   $('redo-watch').textContent = t('redoWatch');
   $('redo-note').textContent = t('redoNote', { name: rec.item.def.name, score: rec.ev.score, n: REDO_MAX - state.redoUsed, max: REDO_MAX });
+  const bb = $('bottombar').getBoundingClientRect();
+  $('redo').style.bottom = Math.round(window.innerHeight - bb.top + 8) + 'px';
   $('redo').classList.remove('hidden');
+  audio.suspend();          // 揚げ音と BGM を止める（時間も止まっている）
+  updateIngredientButtons(); // 具材ボタンを押せなくする
 }
 function closeRedo() {
   if (redo.rec) redo.rec.hold = false;
+  const wasActive = redo.active;
   Object.assign(redo, { active: false, busy: false, pending: 0, rec: null });
   $('redo').classList.add('hidden');
+  if (wasActive) {
+    if (state.running && !state.paused && !Ads.showing) audio.resume();
+    updateIngredientButtons();
+  }
 }
 function updateRedo(dt) {
   if (redo.pending > 0) { redo.pending -= dt; if (redo.pending <= 0) showRedo(); return; }
@@ -1384,8 +1394,7 @@ $('redo-watch').addEventListener('click', async () => {
   Ads.setBanner(false);
   const result = await Ads.showRewarded();
   state.paused = false;
-  audio.resume();
-  if (!redo.active) return;
+  if (!redo.active) { audio.resume(); return; }
   if (result === 'unavailable') {
     $('redo-note').textContent = t('redoFail');
     setTimeout(closeRedo, 2000);
@@ -1402,6 +1411,14 @@ $('redo-watch').addEventListener('click', async () => {
   state.rack = state.rack.filter(r => r !== rec);
   discard(rec);
   state.redoUsed++;
+  for (const seat of seats) {
+    const c = seat.customer;
+    if (c && c.state === 'waiting' && isFinite(c.maxPatience)) {
+      c.patience = c.maxPatience;
+      c.el.classList.remove('urgent');
+      if (c.mood === 'angry') c.setMood('normal');
+    }
+  }
   refry(rec.item.key);
 });
 // 衣をつけた新しい 1 品を、空いている所にすぐ入れる
@@ -1501,7 +1518,8 @@ function frame() {
   const dt = Math.min(0.05, rawDt) * (state.timeScale || 1);
   if (!state.freezeCam) { controls.update(); followZoom(); } // freezeCam は画像の撮影用
   stMat.uniforms.pscale.value = renderer.domElement.height * 0.5;
-  if (!state.paused && !state.sim) simStep(dt);
+  if (redo.active && !state.paused) updateRedo(dt); // 揚げ直しの案内中は営業を止める（残り時間・待ち時間・揚げ具合）
+  else if (!state.paused && !state.sim) simStep(dt);
   updateBanner();
   finish.uniforms.uTime.value = time;
   // スマホなどでは後処理を通さず直接描画して軽くする

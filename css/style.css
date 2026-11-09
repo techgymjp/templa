@@ -343,7 +343,7 @@ body.native .overlay { padding-bottom: 66px; }
 .howto-wrap .modes { margin: 0; }
 /* 揚げ直しの案内（リワード広告） */
 #redo {
-  position: absolute; left: 50%; top: 64px; transform: translateX(-50%); width: min(92%, 420px);
+  position: absolute; left: 50%; bottom: 200px; transform: translateX(-50%); width: min(92%, 420px); z-index: 3;
   background: rgba(43, 29, 18, .94); color: #fff; border: 2px solid #ffd88a; border-radius: 12px; padding: 8px 10px 10px; text-align: center;
 }
 #redo p { margin: 0 0 6px; font-size: 13px; }
