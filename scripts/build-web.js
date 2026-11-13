@@ -68,6 +68,9 @@ for (const page of ['index.html', 'howto.html', 'howto.en.html']) {
     .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com" \/>/, '')
     .replace(/<link href="https:\/\/fonts\.googleapis\.com\/css2[^"]*" rel="stylesheet" \/>/, '<link rel="stylesheet" href="vendor/fonts/fonts.css" />');
   if (/fonts\.googleapis|cdn\.jsdelivr/.test(html)) throw new Error(`${page}: インターネットからの読み込みが残っています`);
+  // Web 版だけの部分（Google Play へのリンクなど）はアプリに入れない
+  html = html.replace(/\s*<!-- web-only -->[\s\S]*?<!-- \/web-only -->/g, '');
+  if (/play\.google\.com/.test(html)) throw new Error(`${page}: Web 版だけの部分（play.google.com）が残っています`);
   fs.writeFileSync(file, html);
 }
 
