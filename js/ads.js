@@ -13,7 +13,7 @@ window.Ads = (() => {
       // 本番の広告ユニット(AdMob の「てんぷら職人」Android)。空の種類は本番ビルドでは出さない
       production: {
         interstitial: 'ca-app-pub-6411535997477460/5563686313',
-        rewarded: 'ca-app-pub-6411535997477460/2061423568',
+        rewarded: 'ca-app-pub-6411535997477460/3701161496',
         banner: 'ca-app-pub-6411535997477460/9561147786',
       },
     },
