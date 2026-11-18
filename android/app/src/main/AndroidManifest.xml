@@ -33,6 +33,10 @@
         </provider>
     </application>
 
+    <!-- 縦画面に固定しているが、縦画面の端末であることは必須にしない
+         （必須にすると、Google Play でタブレットや Chromebook などに配信されなくなる） -->
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
